@@ -91,7 +91,12 @@ def sock_listener(topic, socket_path, username, password, server_address):
 
 if __name__ == '__main__':
     u = Uci()
-    config = u.get_all("l7stats", "config")
+    try:
+        config = u.get_all("l7stats", "config")
+    except Exception as e:
+        print(e)
+    else:
+        print("Configuration file loaded")
     topic = get_topic(config["topic_prefix"], config["topic_interface"])
     username = config["mqtt_username"]
     password = config["mqtt_password"]
