@@ -11,16 +11,19 @@ import socket
 import sys
 import json
 import os
+from uci import Uci
 
 debug_mode     = True
-max_size_debug = 100
+max_size_debug = 2**17
+buffer_sz      = 2**17
 
-def get_topic(NET_IF):
+def get_topic(topic, NET_IF):
     with open("/sys/class/net/" + NET_IF + "/address") as f:
         temp = f.readlines()
     mac = temp[0].strip().replace(":","")
-    print(mac)
-    return "netifyd/" + mac
+    if debug_mode:
+        print(mac)
+    return topic + mac
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
@@ -30,8 +33,8 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("$SYS/#")
 
 def sock_listener(topic, socket_path, username, password, server_address):
-    json_str = str()
-    temp = str()
+    json_str      = str()
+    temp          = str()
     ready_to_send = False
     print("Opening socket...")
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -44,7 +47,7 @@ def sock_listener(topic, socket_path, username, password, server_address):
     mqtt_sub.loop_start()
     print("Listening...")
     while True:
-        datagram = server.recv(1024)
+        datagram = server.recv(buffer_sz)
         if not datagram:
             break
         else:
@@ -61,8 +64,9 @@ def sock_listener(topic, socket_path, username, password, server_address):
                      except IndexError:
                          ready_to_send = True
                      except Exception as e:
-                         #print(e)
-                         print("wtf while processing")
+                         print(
+                         "Rx issue in e", repr(e),
+                          "\nFatal")
                      finally:
                          json_str += j_datagram[i]
                          if ready_to_send:
@@ -86,9 +90,11 @@ def sock_listener(topic, socket_path, username, password, server_address):
                  json_str = str()
 
 if __name__ == '__main__':
-    topic = get_topic("eth1")
-    username = "sturdynet"
-    password = "SturdyNet100!"
-    server_address = "54.213.151.89"
-    socket_path = "/var/run/netifyd/netifyd.sock"
+    u = Uci()
+    config = u.get_all("l7stats", "config")
+    topic = get_topic(config["topic_prefix"], config["topic_interface"])
+    username = config["mqtt_username"]
+    password = config["mqtt_password"]
+    server_address = config["mqtt_server_addr"]
+    socket_path = config["socket_path"]
     sock_listener(topic, socket_path, username, password, server_address)
