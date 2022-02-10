@@ -1,10 +1,15 @@
-Data providers are both the dictionaries constructed using the JSON flow data and the JSON application files. Each flow has three components coming in from the socket stream provided by netifyd.
+# Introduction
+
+Each flow that originates on the device will be detected by netifyd. The flow data is formatted into JSON strings and placed on a stream unix socket. This application will consume those strings format the data and send it to a new socket where other application can consume it. The target consumer is the socket read plugin provided by collectd. The write plugin target is RRD. Therefore, the data must be provided in a format that RRD can consume, process and build databases with. The same flow data will also be pushed into MQTT topics and shipped to the MQTT broker.
+
 
 # Source data
 
-**A flow object** - Provides the digest, the application number and the interface the flow originated on.
-**A flow update object** - Provides the digest that matches the flow object, tx bytes and rx bytes.
-**A flow purge object** - Provides the digest that matches the flow object, tx bytes and rx bytes of the total when the flow has ended.
+Data providers are both the dictionaries constructed using the JSON flow data and the JSON application files. Each flow has three components coming in from the socket stream provided by netifyd.
+
+* 	**A flow object** - Provides the digest, the application number and the interface the flow originated on.
+* 	**A flow update object** - Provides the digest that matches the flow object, tx bytes and rx bytes.
+* 	**A flow purge object** - Provides the digest that matches the flow object, tx bytes and rx bytes of the total when the flow has ended.
 
 # Build dictionaries
 
