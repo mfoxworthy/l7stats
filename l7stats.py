@@ -5,49 +5,32 @@
 #
 # /
 
-
-import paho.mqtt.client as mqtt
 import socket
 import sys
 import json
 from uci import Uci
+from os.path import exists
+from flow_manager import CollectdFlowMan
+
 
 debug_mode = True
 max_size_debug = 2 ** 17
 buffer_sz = 2 ** 17
+flow_dict = {}
+app_group_dict = {}
 
 
-def get_topic(topic, NET_IF):
-    with open("/sys/class/net/" + NET_IF + "/address") as f:
-        temp = f.readlines()
-    mac = temp[0].strip().replace(":", "")
-    if debug_mode:
-        print(mac)
-    return topic + mac
-
-
-def on_connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
-
-    # Subscribing in on_connect() means that if we lose the connection and
-    # reconnect then subscriptions will be renewed.
-    client.subscribe("$SYS/#")
-
-
-def sock_listener(topic, socket_path, username, password, server_address):
+def sock_listener(socket_path):
     json_str = str()
+    f = CollectdFlowMan()
     temp = str()
     ready_to_send = False
     print("Opening socket...")
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    server.connect(socket_path)
-    mqtt_sub = mqtt.Client(client_id="", clean_session=True, userdata=None, transport="tcp")
-    mqtt_sub.enable_logger()
-    mqtt_sub.username_pw_set(username=username, password=password)
-    mqtt_sub.connect(server_address)
-    mqtt_sub.on_connect = on_connect
-    mqtt_sub.loop_start()
-    print("Listening...")
+    if exists(socket_path):
+        server.connect(socket_path)
+    else:
+        print("Socket file doesn't exist")
     while True:
         datagram = server.recv(buffer_sz)
         if not datagram:
@@ -94,18 +77,11 @@ def sock_listener(topic, socket_path, username, password, server_address):
 
 if __name__ == '__main__':
     u = Uci()
-
     try:
         config = u.get_all("l7stats", "config")
     except Exception as e:
         print(e)
     else:
         print("Configuration file loaded")
-
-    topic = get_topic(config["topic_prefix"], config["topic_interface"])
-    username = config["mqtt_username"]
-    password = config["mqtt_password"]
-    server_address = config["mqtt_server_addr"]
     socket_path = config["socket_path"]
-
-    sock_listener(topic, socket_path, username, password, server_address)
+    sock_listener(socket_path)
