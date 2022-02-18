@@ -48,7 +48,7 @@ while True:
             digest = jd['flow']['digest']
             app_name = jd['flow']['detected_application_name'].split(".")[-1]
 
-            """ TODO - Parse JSON files for app to category mappings"""
+            # TODO - Parse JSON files for app to category mappings
             app_cat = 0
             iface_name = jd['interface']
 
