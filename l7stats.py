@@ -1,4 +1,5 @@
 import sys
+import signal
 
 NETIFY_FWA_DIR = "/usr/share/netify-fwa/"
 sys.path.insert(1, NETIFY_FWA_DIR)
@@ -13,6 +14,13 @@ SLEEP_PERIOD = randint(1, 5)
 nd = nfa_netifyd.netifyd()
 fh = nd.connect(uri=SOCKET_ENDPOINT)
 fl = CollectdFlowMan()
+
+
+def sig_alarm_handler(s, f):
+    fl.sendappdata(30)
+
+
+signal.signal(signal.SIGALRM, sig_alarm_handler)
 
 while True:
     try:
