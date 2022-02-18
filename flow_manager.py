@@ -25,11 +25,11 @@ class CollectdFlowMan:
 
     def updateflow(self, digest, bytes_tx, bytes_rx, purge):
         print("Waiting for a lock")
-        if digest in self._flow_dict:
+        if digest in self._flow_dict.keys():
             with self._lock:
                 if purge == 1:
-                    self._flow_dict[digest]['bytes_tx'] = self._flow_dict[digest]['bytes_tx']
-                    self._flow_dict[digest]['bytes_rx'] = self._flow_dict[digest]['bytes_rx']
+                    self._flow_dict[digest]['bytes_tx'] = bytes_tx
+                    self._flow_dict[digest]['bytes_rx'] = bytes_rx
                     self._flow_dict[digest]['purge'] = purge
                 else:
                     self._flow_dict[digest]['bytes_tx'] = self._flow_dict[digest]['bytes_tx'] + bytes_tx
