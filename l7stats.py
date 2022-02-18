@@ -58,13 +58,13 @@ while True:
             bytes_tx = int(jd['flow']['local_bytes'])
             bytes_rx = int(jd['flow']['other_bytes'])
             if digest:
-                fl.updateflow(digest, bytes_tx, bytes_rx, 1)
+                fl.updateflow(digest, bytes_tx, bytes_rx, 1, 0)
 
         if jd['type'] == 'flow_status':
             bytes_tx = int(jd['flow']['local_bytes'])
             bytes_rx = int(jd['flow']['other_bytes'])
             if digest:
-                fl.updateflow(digest, bytes_tx, bytes_rx, 0)
+                fl.updateflow(digest, bytes_tx, bytes_rx, 0, 1)
 
         if jd['type'] == 'agent_status':
             print("ignoring agent_status shit")
