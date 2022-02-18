@@ -14,9 +14,9 @@ class CollectdFlowMan:
     def addflow(self, digest, app_name, app_cat, iface_name):
         print("Waiting for a lock")
         with self._lock:
-            self._flow_dict = {
-                digest: {"app_name": app_name, "app_cat": app_cat, "iface_name": iface_name, "bytes_tx": 0,
-                         "bytes_rx": 0, "purge": 0}}
+            self._flow_dict.update(
+                {digest: {"app_name": app_name, "app_cat": app_cat, "iface_name": iface_name, "bytes_tx": 0,
+                         "bytes_rx": 0, "purge": 0}})
 
     def _delflow(self, digest):
         print("Waiting for a lock")
@@ -25,10 +25,16 @@ class CollectdFlowMan:
 
     def updateflow(self, digest, bytes_tx, bytes_rx, purge):
         print("Waiting for a lock")
-        with self._lock:
-            self._flow_dict[digest]['bytes_tx'] = self._flow_dict[digest]['bytes_tx'] + bytes_tx
-            self._flow_dict[digest]['bytes_rx'] = self._flow_dict[digest]['bytes_rx'] + bytes_rx
-            self._flow_dict[digest]['purge'] = purge
+        if digest in self._flow_dict:
+
+            with self._lock:
+                if purge == 1:
+                    self._flow_dict[digest]['bytes_tx'] = self._flow_dict[digest]['bytes_tx']
+                    self._flow_dict[digest]['bytes_rx'] = self._flow_dict[digest]['bytes_rx']
+                    self._flow_dict[digest]['purge'] = purge
+                else:
+                    self._flow_dict[digest]['bytes_tx'] = self._flow_dict[digest]['bytes_tx'] + bytes_tx
+                    self._flow_dict[digest]['bytes_rx'] = self._flow_dict[digest]['bytes_rx'] + bytes_rx
 
     def sendappdata(self, interval):
         interval = {"interval": interval}

@@ -47,12 +47,14 @@ while True:
             fl.addflow(digest, app_name, app_cat, iface_name)
 
         if jd['type'] == 'flow_purge':
-            print("flow purge detected yo")
-            print(jd)
+            bytes_tx = int(jd['flow']['local_bytes'])
+            bytes_rx = int(jd['flow']['other_bytes'])
+            fl.updateflow(digest, bytes_tx, bytes_rx, 1)
 
         if jd['type'] == 'flow_status':
-            print("flow status detected yo")
-            print(jd)
+            bytes_tx = int(jd['flow']['local_bytes'])
+            bytes_rx = int(jd['flow']['other_bytes'])
+            fl.updateflow(digest, bytes_tx, bytes_rx, 0)
 
         if jd['type'] == 'agent_status':
             print("ignoring agent_status shit")
