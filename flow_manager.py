@@ -31,7 +31,7 @@ class CollectdFlowMan:
         if status == 1:
             self._flow_dict[digest]["status"] = 1
         print("Waiting for a lock")
-        u_bit = self._flow_dict[digest]["update"]
+        u_bit = self._flow_dict[digest]["status"]
         c_app = self._flow_dict[digest]["app_name"] + "_" + self._flow_dict[digest]["iface_name"]
         if digest in self._flow_dict.keys():
             with self._lock:
@@ -55,11 +55,11 @@ class CollectdFlowMan:
         except Exception as e:
             hostname = "fixyernamedude"
             print("Please set the hostname")
-        print("Updating collectd socket with:" + "\n\n\n" + self._app_tot_dict)
+        print("Updating collectd socket with:" + "\n\n\n", self._app_tot_dict)
         print("Waiting for a lock")
         with self._lock:
             for i in list(self._app_tot_dict):
-                ident = hostname + "/" + i + "_" + "/if_octets"
+                ident = hostname + "/" + i + "/if_octets"
                 txbytes = self._app_tot_dict[i]['bytes_tx']
                 rxbytes = self._app_tot_dict[i]['bytes_rx']
                 self._csocket.putval(ident, "N:" + str(txbytes) + ":" + str(rxbytes), interval)

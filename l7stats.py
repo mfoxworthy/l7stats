@@ -35,7 +35,6 @@ while True:
 
         if jd['type'] == 'flow':
             if jd['flow']['other_type'] != 'remote': continue
-            if not jd['internal']: continue
 
             if jd['flow']['ip_protocol'] != 6 and \
                     jd['flow']['ip_protocol'] != 17 and \
