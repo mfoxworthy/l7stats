@@ -1,3 +1,15 @@
+###############
+#
+#
+# Written by:
+#
+# mfoxworthy
+# gchadda
+#
+#
+#
+###############
+
 from threading import RLock
 from collectd_unixsock import Collectd
 import socket
