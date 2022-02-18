@@ -11,12 +11,12 @@ class CollectdFlowMan:
         self._csocket = Collectd()
         self._lock = RLock()
 
-    def addflow(self, digest, app_name, app_group, iface_name):
+    def addflow(self, digest, app_name, app_cat, iface_name):
         print("Waiting for a lock")
         with self._lock:
             self._flow_dict = {
-                digest: {"app_name": app_name, "app_group": app_group, "iface_name": iface_name, "bytes_tx": "",
-                         "bytes_rx": "", "purge": 0}}
+                digest: {"app_name": app_name, "app_cat": app_cat, "iface_name": iface_name, "bytes_tx": 0,
+                         "bytes_rx": 0, "purge": 0}}
 
     def _delflow(self, digest):
         print("Waiting for a lock")
@@ -31,7 +31,7 @@ class CollectdFlowMan:
             self._flow_dict[digest]['purge'] = purge
 
     def sendappdata(self, interval):
-        interval = {"internval": interval}
+        interval = {"interval": interval}
         try:
             hostname = socket.gethostname()
         except Exception as e:

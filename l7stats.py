@@ -1,87 +1,65 @@
-# Contributors:
-#
-# mfoxworthy
-# gchadda
-#
-# /
-
-import socket
 import sys
-import json
-from uci import Uci
-from os.path import exists
+
+NETIFY_FWA_DIR = "/usr/share/netify-fwa/"
+sys.path.insert(1, NETIFY_FWA_DIR)
+import nfa_netifyd
+import time
+from random import randint
 from flow_manager import CollectdFlowMan
 
+SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
+SLEEP_PERIOD = randint(1, 5)
 
-debug_mode = True
-max_size_debug = 2 ** 17
-buffer_sz = 2 ** 17
-flow_dict = {}
-app_group_dict = {}
+nd = nfa_netifyd.netifyd()
+fh = nd.connect(uri=SOCKET_ENDPOINT)
+fl = CollectdFlowMan()
 
-
-def sock_listener(socket_path):
-    json_str = str()
-    f = CollectdFlowMan()
-    temp = str()
-    ready_to_send = False
-    print("Opening socket...")
-    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    if exists(socket_path):
-        server.connect(socket_path)
-    else:
-        print("Socket file doesn't exist")
-    while True:
-        datagram = server.recv(buffer_sz)
-        if not datagram:
-            break
-        else:
-            j_datagram = datagram.decode('utf-8')
-            j_datagram = j_datagram.replace('"', "'")
-
-            try:
-                temp = json.loads(j_datagram)
-            except:
-                for i, c in enumerate(j_datagram):
-                    try:
-                        if j_datagram[i] == "}" and j_datagram[i + 1] != ",":
-                            ready_to_send = True
-                    except IndexError:
-                        ready_to_send = True
-                    except Exception as e:
-                        print(
-                            "Rx issue in e", repr(e),
-                            "\nFatal")
-                    finally:
-                        json_str += j_datagram[i]
-                        if ready_to_send:
-                            # reset state
-                            ready_to_send = False
-
-                            # TODO #1 make external def
-                            mqtt_sub.publish(topic, json_str)
-                            print(f"Publishing {len(json_str)} bytes")
-                            if debug_mode and len(json_str) < max_size_debug:
-                                print(f"{json_str}")
-                            json_str = str()
-            else:
-                json_str += str(temp)
-
-                # TODO #1 make external def
-                mqtt_sub.publish(topic, json_str)
-                print(f"Publishing {len(json_str)} bytes")
-                if debug_mode and len(json_str) < max_size_debug:
-                    print(f"{json_str}")
-                json_str = str()
-
-
-if __name__ == '__main__':
-    u = Uci()
+while True:
     try:
-        config = u.get_all("l7stats", "config")
-    except Exception as e:
-        print(e)
-    else:
-        print("Configuration file loaded")
-    socket_path = config["socket_path"]
-    sock_listener(socket_path)
+        jd = nd.read()
+
+        if jd is None:
+            nd.close()
+            fh = None
+            print("backing off for a sec...")
+            time.sleep(SLEEP_PERIOD)
+            continue
+
+        if jd['type'] == 'flow':
+            if jd['flow']['other_type'] != 'remote': continue
+            if not jd['internal']: continue
+
+            if jd['flow']['ip_protocol'] != 6 and \
+                    jd['flow']['ip_protocol'] != 17 and \
+                    jd['flow']['ip_protocol'] != 132 and \
+                    jd['flow']['ip_protocol'] != 136: continue
+
+            if jd['flow']['detected_protocol'] == 5 or \
+                    jd['flow']['detected_protocol'] == 8: continue
+
+            digest = jd['flow']['digest']
+            app_name = jd['flow']['detected_application_name'].split(".")[-1]
+
+            """ TODO - Parse JSON files for app to category mappings"""
+            app_cat = 0
+            iface_name = jd['interface']
+
+            fl.addflow(digest, app_name, app_cat, iface_name)
+
+        if jd['type'] == 'flow_purge':
+            print("flow purge detected yo")
+            print(jd)
+
+        if jd['type'] == 'flow_status':
+            print("flow status detected yo")
+            print(jd)
+
+        if jd['type'] == 'agent_status':
+            print("ignoring agent_status shit")
+            pass
+
+    except Exception as err:
+        print(str(err))
+        continue
+    except KeyboardInterrupt:
+        nd.close()
