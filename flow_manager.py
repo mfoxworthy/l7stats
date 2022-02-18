@@ -20,8 +20,7 @@ class CollectdFlowMan:
 
     def _delflow(self, digest):
         print("Waiting for a lock")
-        with self._lock:
-            self._flow_dict.pop(digest)
+        self._flow_dict.pop(digest)
 
     def updateflow(self, digest, bytes_tx, bytes_rx, purge):
         print("Waiting for a lock")
@@ -40,15 +39,16 @@ class CollectdFlowMan:
         try:
             hostname = socket.gethostname()
         except Exception as e:
-            print("Well that sucks, I don't have a name")
+            hostname = "fixyernamedude"
+            print("Please set the hostname")
 
         print("Waiting for a lock")
         with self._lock:
-            for i in self._flow_dict:
-                ident = hostname + "_" + self._flow_dict[i]['app_name'] + "_" + self._flow_dict[i]['iface_name']
+            for i in list(self._flow_dict):
+                ident = hostname + "/" + self._flow_dict[i]['app_name'] + "_" + self._flow_dict[i]['iface_name'] + "/if_octets"
                 txbytes = self._flow_dict[i]['bytes_tx']
                 rxbytes = self._flow_dict[i]['bytes_rx']
-                self._csocket.putval(ident, "N:" + rxbytes + ":" + txbytes, interval)
+                self._csocket.putval(ident, "N:" + str(txbytes) + ":" + str(rxbytes), interval)
                 if self._flow_dict[i]['purge'] == 1:
                     self._delflow(i)
 
