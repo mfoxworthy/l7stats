@@ -94,7 +94,7 @@ while True:
                 fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes, 0, 1)
 
         if jd['type'] == 'agent_status':
-            print("ignoring agent_status shit")
+            """ we explicitly ignore agent_status ; not implemented """
             pass
 
     except Exception as err:
@@ -103,3 +103,4 @@ while True:
     except KeyboardInterrupt:
         nd.close()
         eh.set()
+
