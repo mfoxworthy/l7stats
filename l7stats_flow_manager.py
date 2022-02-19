@@ -11,7 +11,7 @@
 ################
 
 from threading import RLock
-from collectd_unixsock import Collectd
+from l7stats_collectd_unixsock import Collectd
 import socket
 
 

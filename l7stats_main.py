@@ -19,7 +19,7 @@ sys.path.insert(1, NETIFY_FWA_DIR)
 import nfa_netifyd
 import time
 from random import randint
-from flow_manager import CollectdFlowMan
+from l7stats_flow_manager import CollectdFlowMan
 
 
 def update_data(e, t):
