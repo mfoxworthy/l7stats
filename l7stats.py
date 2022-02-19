@@ -12,7 +12,7 @@
 
 
 import sys
-import signal
+import threading
 
 NETIFY_FWA_DIR = "/usr/share/netify-fwa/"
 sys.path.insert(1, NETIFY_FWA_DIR)
@@ -22,19 +22,28 @@ from random import randint
 from flow_manager import CollectdFlowMan
 
 
-def sig_alarm_handler(s, f):
-    fl.sendappdata(30)
+def update_data(e, t):
+    b = -1
+    while not e.isSet():
+        if b >= 0:
+            fl.sendappdata(t)
+        else:
+            b += 1
+
+        time.sleep(t)
 
 
-signal.signal(signal.SIGALRM, sig_alarm_handler)
 SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
 SLEEP_PERIOD = randint(1, 5)
+APP_UPDATE_ITVL = 30
 
 nd = nfa_netifyd.netifyd()
 fh = nd.connect(uri=SOCKET_ENDPOINT)
 fl = CollectdFlowMan()
+eh = threading.Event()
 
-signal.signal(signal.SIGALRM, sig_alarm_handler)
+# start off a thread to report data every 30 secs
+threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL)).start()
 
 while True:
     try:
@@ -43,7 +52,7 @@ while True:
         if jd is None:
             nd.close()
             fh = None
-            print("backing off for a sec...")
+            print(f"backing off for {SLEEP_PERIOD}..")
             time.sleep(SLEEP_PERIOD)
             nd = nfa_netifyd.netifyd()
             fh = nd.connect(uri=SOCKET_ENDPOINT)
@@ -93,4 +102,4 @@ while True:
         continue
     except KeyboardInterrupt:
         nd.close()
-
+        eh.set()
