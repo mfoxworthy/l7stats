@@ -14,9 +14,7 @@
 import sys
 import threading
 
-NETIFY_FWA_DIR = "/usr/share/netify-fwa/"
-sys.path.insert(1, NETIFY_FWA_DIR)
-import nfa_netifyd
+from l7stats_netifyd_uds import netifyd
 import time
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
@@ -37,7 +35,7 @@ SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
 SLEEP_PERIOD = randint(1, 5)
 APP_UPDATE_ITVL = 30
 
-nd = nfa_netifyd.netifyd()
+nd = netifyd()
 fh = nd.connect(uri=SOCKET_ENDPOINT)
 fl = CollectdFlowMan()
 eh = threading.Event()
@@ -54,7 +52,7 @@ while True:
             fh = None
             print(f"backing off for {SLEEP_PERIOD}..")
             time.sleep(SLEEP_PERIOD)
-            nd = nfa_netifyd.netifyd()
+            nd = netifyd()
             fh = nd.connect(uri=SOCKET_ENDPOINT)
             continue
 
