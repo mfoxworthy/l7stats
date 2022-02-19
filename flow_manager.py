@@ -72,6 +72,7 @@ class CollectdFlowMan:
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
+
         try:
             hostname = socket.gethostname()
         except Exception as e:
@@ -87,8 +88,14 @@ class CollectdFlowMan:
                 txbytes = self._app_tot_dict[i]['bytes_tx']
                 rxbytes = self._app_tot_dict[i]['bytes_rx']
                 totbytes = self._app_tot_dict[i]['tot_bytes']
-                self._csocket.putval(identi_rxtx, "N:" + str(txbytes) + ":" + str(rxbytes), interval)
-                self._csocket.putval(identi_tot, "N:" + str(totbytes), interval)
+                cd_if_values = []
+                cd_tot_values = []
+                cd_if_values.append("N")
+                cd_if_values = cd_if_values + [txbytes, rxbytes]
+                cd_tot_values.append("N")
+                cd_tot_values.append(totbytes)
+                self._csocket.putval(identi_rxtx, cd_if_values, interval)
+                self._csocket.putval(identi_tot, cd_tot_values, interval)
 
     def sendcatdata(self):
         """Send catagory flows to collectd socket"""
