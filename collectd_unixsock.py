@@ -136,8 +136,7 @@ class Collectd():
         if options:
             options_args = ["%s=%s" % (x, options[x]) for x in options]
             args.extend(options_args)
-        values = list(map(str, values))
-        args.append(':'.join(values))
+        args.append(values)
         return self._cmd('PUTVAL %s' % ' '.join(args))
 
     def _cmd(self, c):
