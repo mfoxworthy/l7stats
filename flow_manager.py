@@ -8,7 +8,7 @@
 #
 #
 #
-###############
+################
 
 from threading import RLock
 from collectd_unixsock import Collectd
