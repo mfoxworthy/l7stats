@@ -21,17 +21,18 @@ import time
 from random import randint
 from flow_manager import CollectdFlowMan
 
+
+def sig_alarm_handler(s, f):
+    fl.sendappdata(30)
+
+
+signal.signal(signal.SIGALRM, sig_alarm_handler)
 SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
 SLEEP_PERIOD = randint(1, 5)
 
 nd = nfa_netifyd.netifyd()
 fh = nd.connect(uri=SOCKET_ENDPOINT)
 fl = CollectdFlowMan()
-
-
-def sig_alarm_handler(s, f):
-    fl.sendappdata(30)
-
 
 signal.signal(signal.SIGALRM, sig_alarm_handler)
 
@@ -44,7 +45,11 @@ while True:
             fh = None
             print("backing off for a sec...")
             time.sleep(SLEEP_PERIOD)
+            nd = nfa_netifyd.netifyd()
+            fh = nd.connect(uri=SOCKET_ENDPOINT)
             continue
+
+        digest = jd['flow']['digest']
 
         if jd['type'] == 'flow':
             if jd['flow']['other_type'] != 'remote': continue
@@ -57,7 +62,6 @@ while True:
             if jd['flow']['detected_protocol'] == 5 or \
                     jd['flow']['detected_protocol'] == 8: continue
 
-            digest = jd['flow']['digest']
             app_name = jd['flow']['detected_application_name'].split(".")[-1]
 
             # TODO - Parse JSON files for app to category mappings

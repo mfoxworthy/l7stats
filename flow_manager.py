@@ -37,7 +37,7 @@ class CollectdFlowMan:
 
     def _delflow(self, digest):
         #print("Waiting for a lock")
-        self._flow_dict.pop(digest)
+        _ = self._flow_dict.pop(digest)
         if digest in self._flow_dict.keys():
             print("Digest wasn't deleted, Hmmmm. ", digest)
         else:
@@ -49,24 +49,26 @@ class CollectdFlowMan:
         #print("Waiting for a lock")
         u_bit = self._flow_dict[digest]["status"]
         c_app = self._flow_dict[digest]["app_name"] + "_" + self._flow_dict[digest]["iface_name"]
+
         if digest in self._flow_dict.keys():
             with self._lock:
                 if purge == 1 and u_bit == 0:
                     self._app_tot_dict[c_app]['bytes_tx'] += bytes_tx
                     self._app_tot_dict[c_app]['bytes_rx'] += bytes_rx
                     self._app_tot_dict[c_app]['tot_bytes'] += tot_bytes
-                    print("Attempting to delete flow")
                     self._delflow(digest)
+                    print(self._app_tot_dict)
                 else:
                     c_tx = self._flow_dict[digest]['bytes_tx']
                     c_rx = self._flow_dict[digest]['bytes_rx']
                     c_tot = self._flow_dict[digest]['tot_bytes']
-                    self._flow_dict[digest]['bytes_tx'] += bytes_tx - c_tx
-                    self._flow_dict[digest]['bytes_tx'] += bytes_rx - c_rx
-                    self._flow_dict[digest]['tot_bytes'] += tot_bytes - c_tot
+                    self._flow_dict[digest]['bytes_tx'] = bytes_tx
+                    self._flow_dict[digest]['bytes_tx'] = bytes_rx
+                    self._flow_dict[digest]['tot_bytes'] = tot_bytes
                     self._app_tot_dict[c_app]['bytes_tx'] += bytes_tx - c_tx
                     self._app_tot_dict[c_app]['bytes_rx'] += bytes_rx - c_rx
                     self._app_tot_dict[c_app]['tot_bytes'] += tot_bytes - c_tot
+                    print(self._app_tot_dict)
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
