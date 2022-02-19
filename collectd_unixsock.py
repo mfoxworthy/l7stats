@@ -127,6 +127,10 @@ class Collectd():
         Options must be passed as a Python dictionary. Example:
           options={'interval': 10}
 
+        Values must be in a list. For example, ["N", tx_bytes, rx_bytes]
+        It will be iterated through and produce a PUTVAL with ":" delimiter.
+        Pay attention to types.db.
+
         Full documentation:
             http://collectd.org/wiki/index.php/Plain_text_protocol#PUTVAL
 
