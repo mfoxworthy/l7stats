@@ -231,22 +231,3 @@ class Collectd():
             (errno, errstr) = e.args
             sys.stderr.write("[error] Closing socket failed: [%d] %s"
                              % (errno, errstr))
-
-
-if __name__ == '__main__':
-    """Collect values from socket and dump to STDOUT"""
-
-#    c = Collectd('/var/run/collectd-unixsock', noisy=True)
-#    list = c.listval()
-#    for val in list:
-#        stamp, identifier = val.split()
-#        print("\n%s" % identifier)
-#        print("\tUpdate time: %s" % stamp)
-
-#       values = c.getval(identifier)
-#       print("\tValue list: %s" % ', '.join(values))
-
-        # don't fetch thresholds by default because collectd will crash
-        # if there is no treshold for the given identifier
-        #thresholds = c.getthreshold(identifier)
-        #print "\tThresholds: %s" % ', '.join(thresholds)

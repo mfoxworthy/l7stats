@@ -25,7 +25,6 @@ class CollectdFlowMan:
         self._lock = RLock()
 
     def addflow(self, digest, app_name, app_cat, iface_name):
-        #print("Waiting for a lock")
         app_int_name = app_name + "_" + iface_name
         if app_int_name not in self._app_tot_dict.keys():
             with self._lock:
@@ -36,7 +35,6 @@ class CollectdFlowMan:
                           "bytes_rx": 0, "tot_bytes": 0, "purge": 0, "status": 0}})
 
     def _delflow(self, digest):
-        #print("Waiting for a lock")
         _ = self._flow_dict.pop(digest)
         if digest in self._flow_dict.keys():
             print("Digest wasn't deleted, Hmmmm. ", digest)
@@ -46,7 +44,6 @@ class CollectdFlowMan:
     def updateflow(self, digest, bytes_tx, bytes_rx, tot_bytes, purge, status):
         if status == 1:
             self._flow_dict[digest]["status"] = 1
-        #print("Waiting for a lock")
         u_bit = self._flow_dict[digest]["status"]
         c_app = self._flow_dict[digest]["app_name"] + "_" + self._flow_dict[digest]["iface_name"]
 
@@ -57,7 +54,6 @@ class CollectdFlowMan:
                     self._app_tot_dict[c_app]['bytes_rx'] += bytes_rx
                     self._app_tot_dict[c_app]['tot_bytes'] += tot_bytes
                     self._delflow(digest)
-                    print(self._app_tot_dict)
                 else:
                     c_tx = self._flow_dict[digest]['bytes_tx']
                     c_rx = self._flow_dict[digest]['bytes_rx']
@@ -68,7 +64,6 @@ class CollectdFlowMan:
                     self._app_tot_dict[c_app]['bytes_tx'] += bytes_tx - c_tx
                     self._app_tot_dict[c_app]['bytes_rx'] += bytes_rx - c_rx
                     self._app_tot_dict[c_app]['tot_bytes'] += tot_bytes - c_tot
-                    print(self._app_tot_dict)
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
@@ -78,9 +73,6 @@ class CollectdFlowMan:
         except Exception as e:
             hostname = "fixyernamedude"
             print("Please set the hostname")
-        print("Updating collectd socket with:" + "\n\n\n", self._app_tot_dict)
-        print("\n\n\n" + "Current Flow Dict" + "\n\n\n", self._flow_dict)
-        #print("Waiting for a lock")
         with self._lock:
             for i in list(self._app_tot_dict):
                 identi_rxtx = hostname + "/application_" + i + "/if_octets"
