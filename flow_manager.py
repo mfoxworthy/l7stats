@@ -82,8 +82,8 @@ class CollectdFlowMan:
         #print("Waiting for a lock")
         with self._lock:
             for i in list(self._app_tot_dict):
-                identi_rxtx = hostname + "/" + i + "/if_octets"
-                identi_tot = hostname + "/" + i + "/total_bytes"
+                identi_rxtx = hostname + "/application_" + i + "/if_octets"
+                identi_tot = hostname + "/application_" + i + "/total_bytes"
                 txbytes = self._app_tot_dict[i]['bytes_tx']
                 rxbytes = self._app_tot_dict[i]['bytes_rx']
                 totbytes = self._app_tot_dict[i]['tot_bytes']
