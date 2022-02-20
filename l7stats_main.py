@@ -26,6 +26,7 @@
 
 import sys
 import threading
+import signal
 
 from l7stats_netifyd_uds import netifyd
 import time
@@ -42,9 +43,18 @@ def update_data(e, t):
             fl.sendappdata(t)
         else:
             b += 1
-
         time.sleep(t)
 
+def cleanup():
+    global nd
+    global eh
+    nd.close()
+    eh.set()
+
+def sig_handler(s, f):
+    print(f"Received stack {repr(s)} on frame {repr(f)}")
+    cleanup()
+    raise SystemExit
 
 SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
 SLEEP_PERIOD = randint(1, 5)
@@ -54,6 +64,10 @@ nd = netifyd()
 fh = nd.connect(uri=SOCKET_ENDPOINT)
 fl = CollectdFlowMan()
 eh = threading.Event()
+
+signal.signal(signal.SIGHUP,  sig_handler)
+signal.signal(signal.SIGTERM, sig_handler)
+signal.signal(signal.SIGINT,  sig_handler)
 
 # start off a thread to report data every 30 secs
 threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL)).start()
@@ -113,7 +127,4 @@ while True:
     except Exception as err:
         print(str(err))
         continue
-    except KeyboardInterrupt:
-        nd.close()
-        eh.set()
 
