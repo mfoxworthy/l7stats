@@ -1,5 +1,5 @@
 # l7stats Engine
-# Copyright (C) 2022 IPSquared, Inc. (https://www.ipsquared.com
+# Copyright (C) 2022 IPSquared, Inc. <https://www.ipsquared.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,14 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ###############
-#
-#
 # Written by:
 #
 # mfoxworthy
 # gchadda
-#
-#
 #
 ################
 # TODO incorporate syslog package
@@ -71,15 +67,12 @@ class CollectdFlowMan:
                     self._app[c_app]['tot_bytes'] += t_bytes
                     self._delflow(dig)
                 else:
-                    c_tx = self._flow[dig]['bytes_tx']
-                    c_rx = self._flow[dig]['bytes_rx']
-                    c_tot = self._flow[dig]['tot_bytes']
                     self._flow[dig]['bytes_tx'] = tx_bytes
                     self._flow[dig]['bytes_tx'] = rx_bytes
                     self._flow[dig]['tot_bytes'] = t_bytes
-                    self._app[c_app]['bytes_tx'] += tx_bytes - c_tx
-                    self._app[c_app]['bytes_rx'] += rx_bytes - c_rx
-                    self._app[c_app]['tot_bytes'] += t_bytes - c_tot
+                    self._app[c_app]['bytes_tx'] += tx_bytes - self._flow[dig]['bytes_tx']
+                    self._app[c_app]['bytes_rx'] += rx_bytes - self._flow[dig]['bytes_rx']
+                    self._app[c_app]['tot_bytes'] += t_bytes - self._flow[dig]['tot_bytes']
 
     def sendappdata(self, interval):
         interval = {"interval": interval}

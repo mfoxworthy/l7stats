@@ -1,5 +1,5 @@
 # l7stats Engine
-# Copyright (C) 2022 IPSquared, Inc. (https://www.ipsquared.com
+# Copyright (C) 2022 IPSquared, Inc. <https://www.ipsquared.com)>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,13 +16,10 @@
 
 ###############
 #
-#
 # Written by:
 #
 # gchadda
 # mfoxworthy
-#
-#
 #
 ###############
 
@@ -34,6 +31,8 @@ from l7stats_netifyd_uds import netifyd
 import time
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
+
+# TODO incorporate syslog package
 
 
 def update_data(e, t):
