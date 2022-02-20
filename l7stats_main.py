@@ -53,7 +53,7 @@ def cleanup():
     eh.set()
 
 def sig_handler(s, f):
-    print(f"Received stack {repr(s)} on frame {f}")
+    print(f"Received stack {repr(s)} on frame {repr(f)}")
     cleanup()
     raise SystemExit
 
