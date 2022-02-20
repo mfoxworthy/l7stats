@@ -24,7 +24,7 @@
 ###############
 
 
-import sys
+import os
 import threading
 import signal
 
@@ -54,7 +54,7 @@ def cleanup():
 def sig_handler(s, f):
     print(f"Received stack {repr(s)} on frame {repr(f)}")
     cleanup()
-    raise SystemExit
+    os._exit(0)
 
 SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
 SLEEP_PERIOD = randint(1, 5)
