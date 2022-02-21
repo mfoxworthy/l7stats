@@ -49,7 +49,7 @@ class CollectdFlowMan:
                           "bytes_rx": 0, "tot_bytes": 0, "purge": 0, "status": 0}})
 
     def _delflow(self, dig):
-        if dig in self._flow.keys():
+        if dig not in self._flow.keys():
             print("Digest not found...\n", dig)
         else:
             _ = self._flow.pop(dig, None)
