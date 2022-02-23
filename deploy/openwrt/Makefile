@@ -43,7 +43,7 @@ endef
 
 define Package/l7stats/install
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) .files//deploy/openwrt/files/l7stats.init  $(1)/etc/init.d/l7stats
+	$(INSTALL_BIN) .files/deploy/openwrt/files/l7stats.init  $(1)/etc/init.d/l7stats
 
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) .files/deploy/openwrt/files/l7stats.sh $(1)/usr/sbin
