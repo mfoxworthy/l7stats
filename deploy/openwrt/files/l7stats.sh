@@ -14,4 +14,4 @@ fi
 # Temporary workaround until OpenWrt start/stop fixed
 mkdir -p /var/run/l7stats
 
-exec $PYTHON -Es /usr/share/netify-fwa/l7stats
+exec $PYTHON -Es /usr/share/l7stats/l7stats_main.py
