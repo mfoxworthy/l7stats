@@ -43,16 +43,16 @@ endef
 
 define Package/l7stats/install
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) .files/deploy/openwrt/files/l7stats.init  $(1)/etc/init.d/l7stats
+	$(INSTALL_BIN) ./deploy/openwrt/files/l7stats.init  $(1)/etc/init.d/l7stats
 
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) .files/deploy/openwrt/files/l7stats.sh $(1)/usr/sbin
+	$(INSTALL_BIN) ./deploy/openwrt/files/l7stats.sh $(1)/usr/sbin
 
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) .files/deploy/openwrt/files/l7stats.config  $(1)/etc/config/l7stats
+	$(INSTALL_DATA) ./deploy/openwrt/files/l7stats.config  $(1)/etc/config/l7stats
 
 	$(INSTALL_DIR) $(1)/usr/share/l7stats
-	$(CP) .files/*.py $(1)/usr/share/l7stats/
+	$(CP) *.py $(1)/usr/share/l7stats/
 endef
 
 define Package/l7stats/postinst
