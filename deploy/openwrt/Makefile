@@ -19,8 +19,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/l7stats
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=
-#	DEPENDS:=+netifyd +python3-urllib +python3-openssl +python3-codecs +python3-ctypes +collectd +luci-app-statistics +collectd-mod-unixsock
+  DEPENDS:=+netifyd +python3-urllib +python3-openssl +python3-codecs +python3-ctypes +collectd +luci-app-statistics +collectd-mod-unixsock
   TITLE:=l7stats - Layer 7 Statistics for luci-app-statistics
   PKGARCH:=all
 endef
