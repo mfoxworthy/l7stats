@@ -12,6 +12,6 @@ if [ -z "$PYTHON" ]; then
 fi
 
 # Temporary workaround until OpenWrt start/stop fixed
-mkdir -p /var/run/l7stats
+mkdir -p /var/run/openwrt
 
-exec $PYTHON -Es /usr/share/l7stats/l7stats_main.py
+exec $PYTHON -Es /usr/share/openwrt/l7stats_main.py
