@@ -27,13 +27,12 @@
 import os
 import threading
 import signal
+import ast
 
 from l7stats_netifyd_uds import netifyd
 import time
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
-
-# TODO incorporate syslog package
 
 
 def update_data(e, t):
@@ -84,20 +83,33 @@ def gen_socket(e):
 
     return retsock
 
-SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
-SLEEP_PERIOD = randint(1, 5)
-APP_UPDATE_ITVL = 30
-
-nd = netifyd()
-fh = gen_socket(SOCKET_ENDPOINT)
-fl = CollectdFlowMan()
-eh = threading.Event()
+SOCKET_ENDPOINT   = "unix:///var/run/netifyd/netifyd.sock"
+SLEEP_PERIOD      = randint(1, 5)
+APP_UPDATE_ITVL   = 30
+app_to_cat        = dict()
+APP_PROTO_FILE    = "/etc/netify-fwa/app-proto-data.json"
+APP_CAT_FILE      = "/etc/netify-fwa/netify-categories.json"
+nd                = netifyd()
+fh                = gen_socket(SOCKET_ENDPOINT)
+fl                = CollectdFlowMan()
+eh                = threading.Event()
 
 signal.signal(signal.SIGHUP,  sig_handler)
 signal.signal(signal.SIGTERM, sig_handler)
 signal.signal(signal.SIGINT,  sig_handler)
 
-# start off a thread to report data every 30 secs
+
+for fp in (APP_PROTO_FILE, APP_CAT_FILE):
+    with open(fp,mode="r") as f:
+         s = f.read()
+
+    if isinstance(s, str):
+        app_to_cat[fp] = ast.literal_eval(s)
+        assert isinstance(app_to_cat[fp], dict) == True
+    else:
+        raise RuntimeError("app mapping failure..")
+
+# start off a thread to report data every APP_UPDATE_ITVL secs
 threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL)).start()
 
 while True:
@@ -126,13 +138,27 @@ while True:
             if jd['flow']['detected_protocol'] == 5 or \
                     jd['flow']['detected_protocol'] == 8: continue
 
-            app_name = jd['flow']['detected_application_name'].split(".")[-1]
+            app_name_str = jd['flow']['detected_application_name']
+            app_int, *app_trail = app_name_str.split("netify")
+            if app_trail:
+                app_int = app_int.strip(".")
+                app_name = app_trail[0].strip(".")
+                print(f"app_int == {app_int}, app_name = {app_name}")
+                app_cat = app_to_cat[APP_CAT_FILE ]['applications'][str(app_int)]
+                for k,v in app_to_cat[APP_PROTO_FILE]["application_category_tags"].items():
+                    if str(app_cat) == str(v):
+                        app_cat_name = k
+                        break
+            else:
+                app_name = "unknown"
+                app_cat  = "unknown"
 
-            # TODO - Parse JSON files for app to category mappings
-            app_cat = 0
+            print(f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
+
             iface_name = jd['interface']
 
-            fl.addflow(digest, app_name, app_cat, iface_name)
+            if digest:
+                fl.addflow(digest, app_name, app_cat, iface_name)
 
         if jd['type'] == 'flow_purge':
             bytes_tx = int(jd['flow']['local_bytes'])
