@@ -140,7 +140,7 @@ while True:
 
             app_name_str = jd['flow']['detected_application_name']
             app_int, *app_trail = app_name_str.split("netify")
-            if app_trail:
+            if 1 == len(app_trail):
                 app_int = app_int.strip(".")
                 app_name = app_trail[0].strip(".")
                 print(f"app_int == {app_int}, app_name = {app_name}")
@@ -150,8 +150,10 @@ while True:
                         app_cat_name = k
                         break
             else:
-                app_name = "unknown"
-                app_cat  = "unknown"
+                print(f"failure.... read in {app_name_str}, unable to parse further")
+                app_name     = "unknown"
+                app_cat      = "unknown"
+                app_cat_name = "unknown"
 
             print(f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
 
