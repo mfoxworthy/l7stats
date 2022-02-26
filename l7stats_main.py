@@ -69,6 +69,8 @@ def gen_socket(e):
         except OSError:
             if not os.path.exists(fp):
                 print(f"{fp} doesn't exist")
+            else:
+                print(f"{fp} exists after attempting to unlink")
     else:
         err = False
 
