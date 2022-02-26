@@ -141,8 +141,8 @@ while True:
             app_name_str = jd['flow']['detected_application_name']
             app_int, *app_trail = app_name_str.split("netify")
             if 1 == len(app_trail):
-                app_int = app_int.strip(".")
-                app_name = app_trail[0].strip(".")
+                app_int = app_int.rstrip(".")
+                app_name = app_trail[0].lstrip(".")
                 print(f"app_int == {app_int}, app_name = {app_name}")
                 app_cat = app_to_cat[APP_CAT_FILE ]['applications'][str(app_int)]
                 for k,v in app_to_cat[APP_PROTO_FILE]["application_category_tags"].items():
