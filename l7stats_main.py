@@ -56,12 +56,38 @@ def sig_handler(s, f):
     cleanup()
     os._exit(0)
 
+def gen_socket(e):
+    fp = e.split("unix://")[-1]
+    err = True
+
+    try:
+        retsock = nd.connect(uri=e)
+    except:
+        try:
+            print(f"unlinking {fp}")
+            os.unlink(fp)
+        except OSError:
+            if not os.path.exists(fp):
+                print("f{fp} doesn't exist")
+    else:
+        err = False
+
+    if err:
+        if 0 == os.system("/etc/init.d/luci_statistics restart") and \
+           0 == os.system("/etc/init.d/l7stats restart"):
+            print("Successfully restarted luci and l7 stats")
+            retsock = nd.connect(uri=e)
+        else:
+            retsock = None
+
+    return retsock
+
 SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
 SLEEP_PERIOD = randint(1, 5)
 APP_UPDATE_ITVL = 30
 
 nd = netifyd()
-fh = nd.connect(uri=SOCKET_ENDPOINT)
+fh = gen_socket(SOCKET_ENDPOINT)
 fl = CollectdFlowMan()
 eh = threading.Event()
 
@@ -82,7 +108,7 @@ while True:
             print(f"backing off for {SLEEP_PERIOD}..")
             time.sleep(SLEEP_PERIOD)
             nd = netifyd()
-            fh = nd.connect(uri=SOCKET_ENDPOINT)
+            fh = gen_socket(SOCKET_ENDPOINT)
             continue
 
         digest = jd['flow']['digest']
