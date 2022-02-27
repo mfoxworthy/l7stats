@@ -125,6 +125,10 @@ while True:
             fh = gen_socket(SOCKET_ENDPOINT)
             continue
 
+        if jd['type'] == 'noop':
+            print("detected noop, continuing...")
+            continue
+
         digest = jd['flow']['digest']
 
         if jd['type'] == 'flow':
@@ -180,7 +184,10 @@ while True:
             """ we explicitly ignore agent_status ; not implemented """
             pass
 
-    except Exception as err:
-        print(str(err))
+    except KeyError as ke:
+        print(f"hit key error for : {ke}")
+        print(jd)
         continue
-
+    except Exception as e:
+        print(f"hit general exception: {e}")
+        continue

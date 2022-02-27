@@ -55,12 +55,13 @@ class CollectdFlowMan:
             _ = self._flow.pop(dig, None)
 
     def updateflow(self, dig, tx_bytes, rx_bytes, t_bytes, purge, status):
-        if status == 1:
-            self._flow[dig]["status"] = 1
-        u_bit = self._flow[dig]["status"]
-        c_app = self._flow[dig]["app_name"] + "_" + self._flow[dig]["iface_name"]
+        has_dig = dig in self._flow.keys()
+        if has_dig:
+            if status == 1:
+                self._flow[dig]["status"] = 1
+            u_bit = self._flow[dig]["status"]
+            c_app = self._flow[dig]["app_name"] + "_" + self._flow[dig]["iface_name"]
 
-        if dig in self._flow.keys():
             with self._lock:
                 if purge == 1 and u_bit == 0:
                     self._app[c_app]['bytes_tx'] += tx_bytes
