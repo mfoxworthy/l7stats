@@ -27,13 +27,12 @@
 import os
 import threading
 import signal
+import ast
 
 from l7stats_netifyd_uds import netifyd
 import time
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
-
-# TODO incorporate syslog package
 
 
 def update_data(e, t):
@@ -56,20 +55,61 @@ def sig_handler(s, f):
     cleanup()
     os._exit(0)
 
-SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
-SLEEP_PERIOD = randint(1, 5)
-APP_UPDATE_ITVL = 30
+def gen_socket(e):
+    fp = e.split("unix://")[-1]
+    err = True
 
-nd = netifyd()
-fh = nd.connect(uri=SOCKET_ENDPOINT)
-fl = CollectdFlowMan()
-eh = threading.Event()
+    try:
+        retsock = nd.connect(uri=e)
+    except:
+        try:
+            print(f"unlinking {fp}")
+            os.unlink(fp)
+        except OSError:
+            if not os.path.exists(fp):
+                print(f"{fp} doesn't exist")
+            else:
+                print(f"{fp} exists after attempting to unlink")
+    else:
+        err = False
+
+    if err:
+        if 0 == os.system("/etc/init.d/luci_statistics restart") and \
+           0 == os.system("/etc/init.d/l7stats restart"):
+            print("Successfully restarted luci and l7 stats")
+            retsock = nd.connect(uri=e)
+        else:
+            retsock = None
+
+    return retsock
+
+SOCKET_ENDPOINT   = "unix:///var/run/netifyd/netifyd.sock"
+SLEEP_PERIOD      = randint(1, 5)
+APP_UPDATE_ITVL   = 30
+app_to_cat        = dict()
+APP_PROTO_FILE    = "/etc/netify-fwa/app-proto-data.json"
+APP_CAT_FILE      = "/etc/netify-fwa/netify-categories.json"
+nd                = netifyd()
+fh                = gen_socket(SOCKET_ENDPOINT)
+fl                = CollectdFlowMan()
+eh                = threading.Event()
 
 signal.signal(signal.SIGHUP,  sig_handler)
 signal.signal(signal.SIGTERM, sig_handler)
 signal.signal(signal.SIGINT,  sig_handler)
 
-# start off a thread to report data every 30 secs
+
+for fp in (APP_PROTO_FILE, APP_CAT_FILE):
+    with open(fp,mode="r") as f:
+         s = f.read()
+
+    if isinstance(s, str):
+        app_to_cat[fp] = ast.literal_eval(s)
+        assert isinstance(app_to_cat[fp], dict) == True
+    else:
+        raise RuntimeError("app mapping failure..")
+
+# start off a thread to report data every APP_UPDATE_ITVL secs
 threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL)).start()
 
 while True:
@@ -82,7 +122,11 @@ while True:
             print(f"backing off for {SLEEP_PERIOD}..")
             time.sleep(SLEEP_PERIOD)
             nd = netifyd()
-            fh = nd.connect(uri=SOCKET_ENDPOINT)
+            fh = gen_socket(SOCKET_ENDPOINT)
+            continue
+
+        if jd['type'] == 'noop':
+            print("detected noop, continuing...")
             continue
 
         digest = jd['flow']['digest']
@@ -98,13 +142,29 @@ while True:
             if jd['flow']['detected_protocol'] == 5 or \
                     jd['flow']['detected_protocol'] == 8: continue
 
-            app_name = jd['flow']['detected_application_name'].split(".")[-1]
+            app_name_str = jd['flow']['detected_application_name']
+            app_int, *app_trail = app_name_str.split("netify")
+            if 1 == len(app_trail):
+                app_int = app_int.rstrip(".")
+                app_name = app_trail[0].lstrip(".")
+                print(f"app_int == {app_int}, app_name = {app_name}")
+                app_cat = app_to_cat[APP_CAT_FILE ]['applications'][str(app_int)]
+                for k,v in app_to_cat[APP_PROTO_FILE]["application_category_tags"].items():
+                    if str(app_cat) == str(v):
+                        app_cat_name = k
+                        break
+            else:
+                print(f"failure.... read in {app_name_str}, unable to parse further")
+                app_name     = "unknown"
+                app_cat      = "unknown"
+                app_cat_name = "unknown"
 
-            # TODO - Parse JSON files for app to category mappings
-            app_cat = 0
+            print(f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
+
             iface_name = jd['interface']
 
-            fl.addflow(digest, app_name, app_cat, iface_name)
+            if digest:
+                fl.addflow(digest, app_name, app_cat, iface_name)
 
         if jd['type'] == 'flow_purge':
             bytes_tx = int(jd['flow']['local_bytes'])
@@ -124,7 +184,10 @@ while True:
             """ we explicitly ignore agent_status ; not implemented """
             pass
 
-    except Exception as err:
-        print(str(err))
+    except KeyError as ke:
+        print(f"hit key error for : {ke}")
+        print(jd)
         continue
-
+    except Exception as e:
+        print(f"hit general exception: {e}")
+        continue
