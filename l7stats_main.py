@@ -164,7 +164,7 @@ while True:
             iface_name = jd['interface']
 
             if digest:
-                fl.addflow(digest, app_name, app_cat, iface_name)
+                fl.addflow(digest, app_name, app_cat_name, iface_name)
 
         if jd['type'] == 'flow_purge':
             bytes_tx = int(jd['flow']['local_bytes'])

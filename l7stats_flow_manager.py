@@ -40,9 +40,13 @@ class CollectdFlowMan:
 
     def addflow(self, dig, app, cat, iface):
         app_int_name = app + "_" + iface
+        cat_int_name = cat + "_" + iface
         if app_int_name not in self._app.keys():
             with self._lock:
                 self._app.update({app_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0}})
+        if cat_int_name not in self._cat.keys():
+            with self._lock:
+                self._cat.update({cat_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0}})
         with self._lock:
             self._flow.update(
                 {dig: {"app_name": app, "app_cat": cat, "iface_name": iface, "bytes_tx": 0,
@@ -61,12 +65,16 @@ class CollectdFlowMan:
                 self._flow[dig]["status"] = 1
             u_bit = self._flow[dig]["status"]
             c_app = self._flow[dig]["app_name"] + "_" + self._flow[dig]["iface_name"]
+            c_cat = self._flow[dig]["cat_name"] + "_" + self._flow[dig]["iface_name"]
 
             with self._lock:
                 if purge == 1 and u_bit == 0:
                     self._app[c_app]['bytes_tx'] += tx_bytes
                     self._app[c_app]['bytes_rx'] += rx_bytes
                     self._app[c_app]['tot_bytes'] += t_bytes
+                    self._cat[c_cat]["bytes_tx"] += tx_bytes
+                    self._cat[c_cat]["bytes_rx"] += rx_bytes
+                    self._cat[c_cat]["tot_bytes"] += t_bytes
                     self._delflow(dig)
                 else:
                     self._flow[dig]['bytes_tx'] = tx_bytes
@@ -75,6 +83,9 @@ class CollectdFlowMan:
                     self._app[c_app]['bytes_tx'] += tx_bytes - self._flow[dig]['bytes_tx']
                     self._app[c_app]['bytes_rx'] += rx_bytes - self._flow[dig]['bytes_rx']
                     self._app[c_app]['tot_bytes'] += t_bytes - self._flow[dig]['tot_bytes']
+                    self._cat[c_cat]['bytes_tx'] += tx_bytes - self._flow[dig]['bytes_tx']
+                    self._cat[c_cat]['bytes_rx'] += rx_bytes - self._flow[dig]['bytes_rx']
+                    self._cat[c_cat]['tot_bytes'] += t_bytes - self._flow[dig]['tot_bytes']
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
@@ -86,15 +97,27 @@ class CollectdFlowMan:
             print("Please set the hostname")
         with self._lock:
             for i in list(self._app):
-                id_rxtx = hostname + "/application_" + i + "/if_octets"
-                id_tot = hostname + "/application_" + i + "/total_bytes"
-                txbytes = self._app[i]['bytes_tx']
-                rxbytes = self._app[i]['bytes_rx']
-                tbytes = self._app[i]['tot_bytes']
-                cd_if = ["N", txbytes, rxbytes]
-                cd_tot = ["N", tbytes]
-                self._csocket.putval(id_rxtx, cd_if, interval)
-                self._csocket.putval(id_tot, cd_tot, interval)
+                app_id_rxtx = hostname + "/application_" + i + "/if_octets"
+                app_id_tot = hostname + "/application_" + i + "/total_bytes"
+                app_txbytes = self._app[i]['bytes_tx']
+                app_rxbytes = self._app[i]['bytes_rx']
+                app_tbytes = self._app[i]['tot_bytes']
+                app_cd_if = ["N", app_txbytes, app_rxbytes]
+                app_cd_tot = ["N", app_tbytes]
+                self._csocket.putval(app_id_rxtx, app_cd_if, interval)
+                self._csocket.putval(app_id_tot, app_cd_tot, interval)
+
+            for i in list(self._cat):
+                cat_id_rxtx = hostname + "/category_" + i + "/if_octets"
+                cat_id_tot = hostname + "/category_" + i + "/total_bytes"
+                cat_txbytes = self._cat[i]['bytes_tx']
+                cat_rxbytes = self._cat[i]['bytes_rx']
+                cat_tbytes = self._cat[i]['tot_bytes']
+                cat_cd_if = ["N", cat_txbytes, cat_rxbytes]
+                cat_cd_tot = ["N", cat_tbytes]
+                self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
+                self._csocket.putval(cat_id_tot, cat_cd_tot, interval)
+
 
     def sendcatdata(self):
         """"""
