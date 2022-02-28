@@ -138,6 +138,10 @@ while True:
             print("detected noop, continuing...")
             continue
 
+        if all(['flow_count' in jd.keys(),'flow_count_prev' in jd.keys()]):
+            print(f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}")
+            continue
+
         digest = jd['flow']['digest']
 
         if jd['type'] == 'flow':
