@@ -50,7 +50,7 @@ class CollectdFlowMan:
         with self._lock:
             self._flow.update(
                 {dig: {"app_name": app, "app_cat": cat, "iface_name": iface, "bytes_tx": 0,
-                          "bytes_rx": 0, "tot_bytes": 0, "purge": 0, "status": 0}})
+                       "bytes_rx": 0, "tot_bytes": 0, "purge": 0, "status": 0}})
 
     def _delflow(self, dig):
         if dig not in self._flow.keys():
@@ -58,34 +58,20 @@ class CollectdFlowMan:
         else:
             _ = self._flow.pop(dig, None)
 
-    def updateflow(self, dig, tx_bytes, rx_bytes, t_bytes, purge, status):
+    def updateflow(self, dig, tx_bytes, rx_bytes, t_bytes):
         has_dig = dig in self._flow.keys()
         if has_dig:
-            if status == 1:
-                self._flow[dig]["status"] = 1
-            u_bit = self._flow[dig]["status"]
             c_app = self._flow[dig]["app_name"] + "_" + self._flow[dig]["iface_name"]
-            c_cat = self._flow[dig]["cat_name"] + "_" + self._flow[dig]["iface_name"]
+            c_cat = self._flow[dig]["app_cat"] + "_" + self._flow[dig]["iface_name"]
 
             with self._lock:
-                if purge == 1 and u_bit == 0:
-                    self._app[c_app]['bytes_tx'] += tx_bytes
-                    self._app[c_app]['bytes_rx'] += rx_bytes
-                    self._app[c_app]['tot_bytes'] += t_bytes
-                    self._cat[c_cat]["bytes_tx"] += tx_bytes
-                    self._cat[c_cat]["bytes_rx"] += rx_bytes
-                    self._cat[c_cat]["tot_bytes"] += t_bytes
-                    self._delflow(dig)
-                else:
-                    self._flow[dig]['bytes_tx'] = tx_bytes
-                    self._flow[dig]['bytes_tx'] = rx_bytes
-                    self._flow[dig]['tot_bytes'] = t_bytes
-                    self._app[c_app]['bytes_tx'] += tx_bytes - self._flow[dig]['bytes_tx']
-                    self._app[c_app]['bytes_rx'] += rx_bytes - self._flow[dig]['bytes_rx']
-                    self._app[c_app]['tot_bytes'] += t_bytes - self._flow[dig]['tot_bytes']
-                    self._cat[c_cat]['bytes_tx'] += tx_bytes - self._flow[dig]['bytes_tx']
-                    self._cat[c_cat]['bytes_rx'] += rx_bytes - self._flow[dig]['bytes_rx']
-                    self._cat[c_cat]['tot_bytes'] += t_bytes - self._flow[dig]['tot_bytes']
+                self._app[c_app]['bytes_tx'] += tx_bytes
+                self._app[c_app]['bytes_rx'] += rx_bytes
+                self._app[c_app]['tot_bytes'] += t_bytes
+                self._cat[c_cat]["bytes_tx"] += tx_bytes
+                self._cat[c_cat]["bytes_rx"] += rx_bytes
+                self._cat[c_cat]["tot_bytes"] += t_bytes
+                self._delflow(dig)
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
@@ -117,8 +103,3 @@ class CollectdFlowMan:
                 cat_cd_tot = ["N", cat_tbytes]
                 self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
                 self._csocket.putval(cat_id_tot, cat_cd_tot, interval)
-
-
-    def sendcatdata(self):
-        """"""
-        # TODO Send catagory flows to collectd socket
