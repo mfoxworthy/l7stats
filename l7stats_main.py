@@ -83,11 +83,9 @@ def gen_socket(e):
         err = False
 
     if err:
-        if 0 == os.system("/etc/init.d/luci_statistics restart") and \
-           0 == os.system("/etc/init.d/l7stats restart"):
-            print("Successfully restarted luci and l7 stats")
+        try:
             retsock = nd.connect(uri=e)
-        else:
+        except:
             retsock = None
 
     return retsock
@@ -188,11 +186,13 @@ while True:
                 fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes)
 
         if jd['type'] == 'flow_status':
-            bytes_tx = int(jd['flow']['local_bytes'])
-            bytes_rx = int(jd['flow']['other_bytes'])
-            tot_bytes = int(jd['flow']['total_bytes'])
-            if digest:
-                fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes)
+            #bytes_tx = int(jd['flow']['local_bytes'])
+            #bytes_rx = int(jd['flow']['other_bytes'])
+            #tot_bytes = int(jd['flow']['total_bytes'])
+            #if digest:
+            #    fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes)
+            print("flow status received...unexpected")
+            print(jd)
 
         if jd['type'] == 'agent_status':
             """ we explicitly ignore agent_status ; not implemented """
