@@ -139,7 +139,7 @@ while True:
             continue
 
         if all(['flow_count' in jd.keys(),'flow_count_prev' in jd.keys()]):
-            print(f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}")
+            print(f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}{os.linesep}delta == {-nd.flows_delta}")
             continue
 
         digest = jd['flow']['digest']
