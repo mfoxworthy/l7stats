@@ -28,9 +28,9 @@ import os
 import threading
 import signal
 import ast
+import time
 
 from l7stats_netifyd_uds import netifyd
-import time
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
 
@@ -38,11 +38,20 @@ from l7stats_flow_manager import CollectdFlowMan
 def update_data(e, t):
     b = -1
     while not e.isSet():
+        timing_bias = 0
         if b >= 0:
+            timing_bias -= int(time.time())
             fl.sendappdata(t)
+            timing_bias += int(time.time())
         else:
             b += 1
-        time.sleep(t)
+
+        if timing_bias < t and timing_bias > 0:
+            print(f"normalized sleep to {t - timing_bias}")
+            time.sleep(t - timing_bias)
+        else:
+            print(f"using default sleep timer, timing_bias is... : {timing_bias}")
+            time.sleep(t)
 
 def cleanup():
     global nd
