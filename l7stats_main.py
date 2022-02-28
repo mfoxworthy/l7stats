@@ -168,7 +168,7 @@ while True:
             else:
                 print(f"failure.... read in {app_name_str}, unable to parse further")
                 app_name     = "unknown"
-                app_cat      = "unknown"
+                app_cat      = 0
                 app_cat_name = "unknown"
 
             print(f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
