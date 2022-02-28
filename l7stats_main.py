@@ -35,7 +35,7 @@ from random import randint
 from l7stats_flow_manager import CollectdFlowMan
 
 
-def update_data(e, t):
+def update_data(e, t, fl):
     b = -1
     while not e.isSet():
         timing_bias = 0
@@ -117,7 +117,7 @@ for fp in (APP_PROTO_FILE, APP_CAT_FILE):
         raise RuntimeError("app mapping failure..")
 
 # start off a thread to report data every APP_UPDATE_ITVL secs
-threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL)).start()
+threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL, fl)).start()
 
 while True:
     try:
