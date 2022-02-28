@@ -28,9 +28,9 @@ import os
 import threading
 import signal
 import ast
+import time
 
 from l7stats_netifyd_uds import netifyd
-import time
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
 
@@ -38,11 +38,20 @@ from l7stats_flow_manager import CollectdFlowMan
 def update_data(e, t):
     b = -1
     while not e.isSet():
+        timing_bias = 0
         if b >= 0:
+            timing_bias -= int(time.time())
             fl.sendappdata(t)
+            timing_bias += int(time.time())
         else:
             b += 1
-        time.sleep(t)
+
+        if timing_bias < t and timing_bias > 0:
+            print(f"normalized sleep to {t - timing_bias}")
+            time.sleep(t - timing_bias)
+        else:
+            print(f"using default sleep timer, timing_bias is... : {timing_bias}")
+            time.sleep(t)
 
 def cleanup():
     global nd
@@ -74,11 +83,9 @@ def gen_socket(e):
         err = False
 
     if err:
-        if 0 == os.system("/etc/init.d/luci_statistics restart") and \
-           0 == os.system("/etc/init.d/l7stats restart"):
-            print("Successfully restarted luci and l7 stats")
+        try:
             retsock = nd.connect(uri=e)
-        else:
+        except:
             retsock = None
 
     return retsock
@@ -129,6 +136,11 @@ while True:
             print("detected noop, continuing...")
             continue
 
+        if all(['flow_count' in jd.keys(),'flow_count_prev' in jd.keys()]):
+            print(f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}"\
+                  + f"{os.linesep}delta == {-nd.flows_delta}")
+            continue
+
         digest = jd['flow']['digest']
 
         if jd['type'] == 'flow':
@@ -156,7 +168,7 @@ while True:
             else:
                 print(f"failure.... read in {app_name_str}, unable to parse further")
                 app_name     = "unknown"
-                app_cat      = "unknown"
+                app_cat      = 0
                 app_cat_name = "unknown"
 
             print(f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
@@ -174,11 +186,13 @@ while True:
                 fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes)
 
         if jd['type'] == 'flow_status':
-            bytes_tx = int(jd['flow']['local_bytes'])
-            bytes_rx = int(jd['flow']['other_bytes'])
-            tot_bytes = int(jd['flow']['total_bytes'])
-            if digest:
-                fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes)
+            #bytes_tx = int(jd['flow']['local_bytes'])
+            #bytes_rx = int(jd['flow']['other_bytes'])
+            #tot_bytes = int(jd['flow']['total_bytes'])
+            #if digest:
+            #    fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes)
+            print("flow status received...unexpected")
+            print(jd)
 
         if jd['type'] == 'agent_status':
             """ we explicitly ignore agent_status ; not implemented """

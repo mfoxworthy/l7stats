@@ -29,7 +29,8 @@
 
 import socket
 import sys
-
+import os
+import time
 
 class Collectd():
 
@@ -180,9 +181,22 @@ class Collectd():
             return sock
         except socket.error as e:
             (errno, errstr) = e.args
-            sys.stderr.write("[error] Connecting to socket failed: [%d] %s"
+            sys.stderr.write("[error] Connecting to socket failed: [%d] %s \n"
                              % (errno, errstr))
-            return None
+            sys.stderr.write("[l7stats_patch] fixing socket error\n")
+            try:
+                assert 0 == os.system("rm " + self.path)
+                assert 0 == os.system("/etc/init.d/luci_statistics restart")
+            except AssertionError:
+                sys.stderr.write("[l7stats_patch] failed\n")
+                return None
+            else:
+                sys.stderr.write("[l7stats_patch] succeeded\n")
+                sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                while not os.path.exists(self.path):
+                    time.sleep(.05)
+                sock.connect(self.path)
+                return sock
 
     def _readline(self):
         """Read single line from socket"""
