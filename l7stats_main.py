@@ -161,10 +161,7 @@ while True:
                 app_name = app_trail[0].lstrip(".")
                 print(f"app_int == {app_int}, app_name = {app_name}")
                 app_cat = app_to_cat[APP_CAT_FILE ]['applications'][str(app_int)]
-                for k,v in app_to_cat[APP_PROTO_FILE]["application_category_tags"].items():
-                    if str(app_cat) == str(v):
-                        app_cat_name = k
-                        break
+                app_cat_name = app_to_cat[APP_PROTO_FILE]['application_category'][str(app_cat)]['tag']
             else:
                 print(f"failure.... read in {app_name_str}, unable to parse further")
                 app_name     = "unknown"
