@@ -175,6 +175,12 @@ while True:
 
             iface_name = jd['interface']
 
+            detected_protocol         = jd['flow']['detected_protocol']
+            detected_protocol_mapping = app_to_cat[APP_CAT_FILE]['protocols'][str(detected_protocol)]
+            protocol_mapping_name     = app_to_cat[APP_PROTO_FILE]['protocol_category'][str(detected_protocol_mapping)]['tag']
+
+            print(f"detected_protocol_mapping={detected_protocol_mapping}, protocol_mapping_name  = {protocol_mapping_name}")
+
             if digest:
                 fl.addflow(digest, app_name, app_cat_name, iface_name)
 
