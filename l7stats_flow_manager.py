@@ -43,10 +43,12 @@ class CollectdFlowMan:
         cat_int_name = cat + "_" + iface
         if app_int_name not in self._app.keys():
             with self._lock:
-                self._app.update({app_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0}})
+                self._app.update({app_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0,
+                                                 "old_tx": 0, "old_rx": 0, "old_tot": 0}})
         if cat_int_name not in self._cat.keys():
             with self._lock:
-                self._cat.update({cat_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0}})
+                self._cat.update({cat_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0,
+                                                 "old_tx": 0, "old_rx": 0, "old_tot": 0}})
         with self._lock:
             self._flow.update(
                 {dig: {"app_name": app, "app_cat": cat, "iface_name": iface, "bytes_tx": 0,
@@ -90,7 +92,18 @@ class CollectdFlowMan:
                 app_tbytes = self._app[i]['tot_bytes']
                 app_cd_if = ["N", app_txbytes, app_rxbytes]
                 app_cd_tot = ["N", app_tbytes]
+
+                # TODO evaluate ways to compress data
+
+                # if app_txbytes != self._app[i]['old_tx'] or app_rxbytes != self._app[i]['old_rx']:
+                #    self._app[i]['old_tx'] = app_txbytes
+                #    self._app[i]['old_rx'] = app_rxbytes
+
                 self._csocket.putval(app_id_rxtx, app_cd_if, interval)
+
+                # if app_tbytes != self._app[i]['old_tot']:
+                #    self._app[i]['old_tot'] = app_tbytes
+
                 self._csocket.putval(app_id_tot, app_cd_tot, interval)
 
             for i in list(self._cat):
