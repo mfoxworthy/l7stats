@@ -21,13 +21,14 @@
 # gchadda
 #
 ################
-# TODO incorporate syslog package
 
 
 from threading import RLock
 from l7stats_collectd_uds import Collectd
 import socket
-
+from syslog import \
+    openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
+    LOG_DEBUG, LOG_ERR, LOG_WARNING, LOG_INFO, LOG_CRIT
 
 class CollectdFlowMan:
 
@@ -54,7 +55,7 @@ class CollectdFlowMan:
 
     def _delflow(self, dig):
         if dig not in self._flow.keys():
-            print("Digest not found...\n", dig)
+            syslog(LOG_WARNING, "Digest not found...\n", dig)
         else:
             _ = self._flow.pop(dig, None)
 
@@ -79,8 +80,8 @@ class CollectdFlowMan:
         try:
             hostname = socket.gethostname()
         except Exception as e:
-            hostname = "fixyernamedude"
-            print("Please set the hostname")
+            hostname = "default_sturdynet"
+            syslog(LOG_CRIT, "Please set the hostname")
         with self._lock:
             for i in list(self._app):
                 app_id_rxtx = hostname + "/application_" + i + "/if_octets"

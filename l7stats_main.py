@@ -33,6 +33,9 @@ import time
 from l7stats_netifyd_uds import netifyd
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
+from syslog import \
+    openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
+    LOG_DEBUG, LOG_ERR, LOG_WARNING, LOG_INFO
 
 def round_float_by_precision(inval, p = -1):
     if -1 == p:
@@ -52,10 +55,10 @@ def update_data(e, t, fl):
 
         if timing_bias < t and timing_bias > 0:
             t_delta = round_float_by_precision(t - timing_bias)
-            print(f"normalized sleep to {t_delta}")
+            syslog(LOG_INFO, f"normalized sleep to {t_delta}")
             time.sleep(t_delta)
         else:
-            print(f"using default sleep timer, timing_bias is... : {timing_bias}")
+            syslog(LOG_INFO, f"using default sleep timer, timing_bias is: {timing_bias}")
             time.sleep(t)
 
 def cleanup():
@@ -65,7 +68,7 @@ def cleanup():
     eh.set()
 
 def sig_handler(s, f):
-    print(f"Received stack {repr(s)} on frame {repr(f)}")
+    syslog(LOG_ERR, f"Received stack {repr(s)} on frame {repr(f)}")
     cleanup()
     os._exit(0)
 
@@ -77,13 +80,13 @@ def gen_socket(e):
         retsock = nd.connect(uri=e)
     except:
         try:
-            print(f"unlinking {fp}")
+            syslog(LOG_INFO, f"unlinking {fp}")
             os.unlink(fp)
         except OSError:
             if not os.path.exists(fp):
-                print(f"{fp} doesn't exist")
+                syslog(LOG_INFO, f"{fp} doesn't exist")
             else:
-                print(f"{fp} exists after attempting to unlink")
+                syslog(LOG_ERR, f"{fp} exists after attempting to unlink")
     else:
         err = False
 
@@ -132,18 +135,18 @@ while True:
         if jd is None:
             nd.close()
             fh = None
-            print(f"backing off for {SLEEP_PERIOD}..")
+            syslog(LOG_INFO, f"backing off for {SLEEP_PERIOD}..")
             time.sleep(SLEEP_PERIOD)
             nd = netifyd()
             fh = gen_socket(SOCKET_ENDPOINT)
             continue
 
         if jd['type'] == 'noop':
-            print("detected noop, continuing...")
+            syslog(LOG_DEBUG, "detected noop, continuing...")
             continue
 
         if all(['flow_count' in jd.keys(),'flow_count_prev' in jd.keys()]):
-            print(f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}"\
+            syslog(LOG_INFO, f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}"\
                   + f"{os.linesep}delta == {-nd.flows_delta}")
             continue
 
@@ -165,16 +168,16 @@ while True:
             if 1 == len(app_trail):
                 app_int = app_int.rstrip(".")
                 app_name = app_trail[0].lstrip(".")
-                print(f"app_int == {app_int}, app_name = {app_name}")
+                syslog(LOG_INFO, f"app_int == {app_int}, app_name = {app_name}")
                 app_cat = app_to_cat[APP_CAT_FILE ]['applications'][str(app_int)]
                 app_cat_name = app_to_cat[APP_PROTO_FILE]['application_category'][str(app_cat)]['tag']
             else:
-                print(f"failure.... read in {app_name_str}, unable to parse further")
+                syslog(LOG_INFO, f"failure.... read in {app_name_str}, unable to parse further")
                 app_name     = "unknown"
                 app_cat      = 0
                 app_cat_name = "unknown"
 
-            print(f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
+            syslog(LOG_INFO, f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
 
             iface_name = jd['interface']
 
@@ -182,7 +185,7 @@ while True:
             detected_protocol_mapping = app_to_cat[APP_CAT_FILE]['protocols'][str(detected_protocol)]
             protocol_mapping_name     = app_to_cat[APP_PROTO_FILE]['protocol_category'][str(detected_protocol_mapping)]['tag']
 
-            print(f"detected_protocol_mapping={detected_protocol_mapping}, protocol_mapping_name  = {protocol_mapping_name}")
+            syslog(LOG_INFO, f"detected_protocol_mapping={detected_protocol_mapping}, protocol_mapping_name  = {protocol_mapping_name}")
 
             if digest:
                 fl.addflow(digest, app_name, app_cat_name, iface_name)
@@ -200,17 +203,17 @@ while True:
             #tot_bytes = int(jd['flow']['total_bytes'])
             #if digest:
             #    fl.updateflow(digest, bytes_tx, bytes_rx, tot_bytes)
-            print("flow status received...unexpected")
-            print(jd)
+            syslog(LOG_ERR, "flow status received...unexpected")
+            syslog(LOG_ERR, str(jd))
 
         if jd['type'] == 'agent_status':
             """ we explicitly ignore agent_status ; not implemented """
             pass
 
     except KeyError as ke:
-        print(f"hit key error for : {ke}")
-        print(jd)
+        syslog(LOG_ERR, f"hit key error for : {ke}")
+        syslog(LOG_ERR, str(jd))
         continue
     except Exception as e:
-        print(f"hit general exception: {e}")
+        syslog(LOG_ERR, f"hit general exception: {e}")
         continue
