@@ -34,21 +34,26 @@ from l7stats_netifyd_uds import netifyd
 from random import randint
 from l7stats_flow_manager import CollectdFlowMan
 
+def round_float_by_precision(inval, p = -1):
+    if -1 == p:
+        p = TIMING_PRECISION
+    return round(float(inval), p)
 
 def update_data(e, t, fl):
     b = -1
     while not e.isSet():
         timing_bias = 0
         if b >= 0:
-            timing_bias -= int(time.time())
+            timing_bias -= round_float_by_precision(time.time())
             fl.sendappdata(t)
-            timing_bias += int(time.time())
+            timing_bias += round_float_by_precision(time.time())
         else:
             b += 1
 
         if timing_bias < t and timing_bias > 0:
-            print(f"normalized sleep to {t - timing_bias}")
-            time.sleep(t - timing_bias)
+            t_delta = round_float_by_precision(t - timing_bias)
+            print(f"normalized sleep to {t_delta}")
+            time.sleep(t_delta)
         else:
             print(f"using default sleep timer, timing_bias is... : {timing_bias}")
             time.sleep(t)
@@ -100,6 +105,7 @@ nd                = netifyd()
 fh                = gen_socket(SOCKET_ENDPOINT)
 fl                = CollectdFlowMan()
 eh                = threading.Event()
+TIMING_PRECISION  = 1
 
 signal.signal(signal.SIGHUP,  sig_handler)
 signal.signal(signal.SIGTERM, sig_handler)
