@@ -1,14 +1,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=l7stats
-PKG_SOURCE_VERSION:=v1.0
+PKG_SOURCE_VERSION:=fd61253e0958727f4f91f2d5cf61a17204e03738
 PKG_VERSION:=v1.0
-PKG_RELEASE:=1
+PKG_RELEASE:=v1.0
 PKG_MAINTAINER:=Michael Foxworthy <mfoxworthy@ipsquared.com>
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@github.com:mfoxworthy/l7stats.git
-PKG_MIRROR_HASH:=skip
+PKG_MIRROR_HASH:=b12047b0b01b9bb27fdfa86a53f14eaa175f104bd33f530e2e699d815d39b1c7
 
 PKG_LICENSE:=GPLv3
 
@@ -19,7 +19,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/l7stats
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+netifyd +python3-urllib +python3-openssl +python3-codecs +python3-ctypes +collectd +luci-app-statistics +collectd-mod-unixsock
+  DEPENDS:=+netifyd +python3-urllib +python3-openssl +collectd +collectd-mod-unixsock
   TITLE:=l7stats - Layer 7 Statistics for luci-app-statistics
   PKGARCH:=all
 endef
@@ -42,16 +42,16 @@ endef
 
 define Package/l7stats/install
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/deploy/openwrt/files/l7stats.init  $(1)/etc/init.d/l7stats
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/deploy/openwrt/files/l7stats.init  $(1)/etc/init.d/l7stats
 
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) ./files/deploy/openwrt/files/l7stats.sh $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/deploy/openwrt/files/l7stats.sh $(1)/usr/sbin
 
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/deploy/openwrt/files/l7stats.config  $(1)/etc/config/l7stats
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/deploy/openwrt/files/l7stats.config  $(1)/etc/config/l7stats
 
 	$(INSTALL_DIR) $(1)/usr/share/l7stats
-	$(CP) *.py $(1)/usr/share/l7stats/
+	$(CP) $(PKG_BUILD_DIR)/*.py $(1)/usr/share/l7stats/
 endef
 
 define Package/l7stats/postinst
