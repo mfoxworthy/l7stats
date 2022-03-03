@@ -12,8 +12,6 @@ PKG_MIRROR_HASH:=b12047b0b01b9bb27fdfa86a53f14eaa175f104bd33f530e2e699d815d39b1c
 
 PKG_LICENSE:=GPLv3
 
-
-
 include $(INCLUDE_DIR)/package.mk
 
 define Package/l7stats
