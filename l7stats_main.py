@@ -123,7 +123,7 @@ for fp in (APP_PROTO_FILE, APP_CAT_FILE):
         app_to_cat[fp] = ast.literal_eval(s)
         assert isinstance(app_to_cat[fp], dict) == True
     else:
-        raise RuntimeError("app mapping failure..")
+        raise TypeError("app mapping failure..")
 
 # start off a thread to report data every APP_UPDATE_ITVL secs
 threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL, fl)).start()
