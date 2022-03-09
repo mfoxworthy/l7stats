@@ -86,8 +86,11 @@ class CollectdFlowMan:
             syslog(LOG_CRIT, "Please set the hostname")
         with self._lock:
             for i in list(self._app):
-                app_id_rxtx = hostname + "/application_" + i + "/if_octets"
-                app_id_tot = hostname + "/application_" + i + "/total_bytes"
+                x = i.split("_")
+                app_name = x[0].replace("-", "_")
+                i_name = x[1].replace("-", "_")
+                app_id_rxtx = hostname + "/application-" + app_name + "/if_octets-" + i_name
+                app_id_tot = hostname + "/application-" + app_name + "/total_bytes-" + i_name
                 app_txbytes = self._app[i]['bytes_tx']
                 app_rxbytes = self._app[i]['bytes_rx']
                 app_tbytes = self._app[i]['tot_bytes']
@@ -108,8 +111,11 @@ class CollectdFlowMan:
                 self._csocket.putval(app_id_tot, app_cd_tot, interval)
 
             for i in list(self._cat):
-                cat_id_rxtx = hostname + "/category_" + i + "/if_octets"
-                cat_id_tot = hostname + "/category_" + i + "/total_bytes"
+                x = i.split("_")
+                cat_name = x[0].replace("-", "_")
+                i_name = x[1].replace("-", "_")
+                cat_id_rxtx = hostname + "/category-" + cat_name + "/if_octets-" + i_name
+                cat_id_tot = hostname + "/category-" + cat_name + "/total_bytes-" + i_name
                 cat_txbytes = self._cat[i]['bytes_tx']
                 cat_rxbytes = self._cat[i]['bytes_rx']
                 cat_tbytes = self._cat[i]['tot_bytes']
