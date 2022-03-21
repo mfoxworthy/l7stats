@@ -123,10 +123,3 @@ class CollectdFlowMan:
                 cat_cd_tot = ["N", cat_tbytes]
                 self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
                 self._csocket.putval(cat_id_tot, cat_cd_tot, interval)
-# TODO add code to add types to types.db
-#total_bytes-eth1        value:DERIVE:0:U
-#total_bytes-br_lan      value:DERIVE:0:U
-#total_bytes-3g_wwan     value:DERIVE:0:U
-#if_octets-eth1          rx:DERIVE:0:U, tx:DERIVE:0:U
-#if_octets-br_lan        rx:DERIVE:0:U, tx:DERIVE:0:U
-#if_octets-3g_wwan       rx:DERIVE:0:U, tx:DERIVE:0:U
