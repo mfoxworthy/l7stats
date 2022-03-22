@@ -1,4 +1,3 @@
-#import socket and sys
 import json
 import socket
 import sys
@@ -30,10 +29,10 @@ def Main():
     while True:
         #Waits for a connection
         print("Waiting for a connection")
-        connection, client_address = s.accept()
-        fh = connection.makefile()
+        conn, c_addr = s.accept()
+        fh = conn.makefile()
         try:
-            print('connection from', client_address)
+            print('connection from', c_addr)
             #Receive the data in small chunks and retransmit it
             while True:
                 data = fh.readline()
@@ -41,7 +40,7 @@ def Main():
                 print(jd)
         finally:
             #Free the connection
-            connection.close()
+            conn.close()
 
 if __name__ == "__main__":
     Main()
