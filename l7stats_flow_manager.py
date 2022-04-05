@@ -30,6 +30,7 @@ from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING, LOG_INFO, LOG_CRIT
 
+
 class CollectdFlowMan:
 
     def __init__(self):
@@ -39,21 +40,27 @@ class CollectdFlowMan:
         self._csocket = Collectd()
         self._lock = RLock()
 
+    def _key_exists(self, dict, *keys):
+        _dict = dict
+        for key in keys:
+            try:
+                _dict = _dict[key]
+            except KeyError:
+                return False
+        return True
+
     def addflow(self, dig, app, cat, iface):
         app_int_name = app + "_" + iface
         cat_int_name = cat + "_" + iface
         if app_int_name not in self._app.keys():
             with self._lock:
-                self._app.update({app_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0,
-                                                 "old_tx": 0, "old_rx": 0, "old_tot": 0}})
+                self._app.update({app_int_name: {"bytes_tx": 0, "bytes_rx": 0}})
         if cat_int_name not in self._cat.keys():
             with self._lock:
-                self._cat.update({cat_int_name: {"bytes_tx": 0, "bytes_rx": 0, "tot_bytes": 0,
-                                                 "old_tx": 0, "old_rx": 0, "old_tot": 0}})
+                self._cat.update({cat_int_name: {"bytes_tx": 0, "bytes_rx": 0}})
         with self._lock:
             self._flow.update(
-                {dig: {"app_name": app, "app_cat": cat, "iface_name": iface, "bytes_tx": 0,
-                       "bytes_rx": 0, "tot_bytes": 0, "purge": 0, "status": 0}})
+                {dig: {"app_name": app, "app_cat": cat, "iface_name": iface}})
 
     def _delflow(self, dig):
         if dig not in self._flow.keys():
@@ -61,24 +68,40 @@ class CollectdFlowMan:
         else:
             _ = self._flow.pop(dig, None)
 
-    def updateflow(self, dig, tx_bytes, rx_bytes, t_bytes):
+    def purgeflow(self, dig):
         has_dig = dig in self._flow.keys()
         if has_dig:
-            c_app = self._flow[dig]["app_name"] + "_" + self._flow[dig]["iface_name"]
-            c_cat = self._flow[dig]["app_cat"] + "_" + self._flow[dig]["iface_name"]
-
             with self._lock:
-                self._app[c_app]['bytes_tx'] += tx_bytes
-                self._app[c_app]['bytes_rx'] += rx_bytes
-                self._app[c_app]['tot_bytes'] += t_bytes
-                self._cat[c_cat]["bytes_tx"] += tx_bytes
-                self._cat[c_cat]["bytes_rx"] += rx_bytes
-                self._cat[c_cat]["tot_bytes"] += t_bytes
-                self._delflow(dig)
+                self._flow[dig]["purge"] = 1
+
+    def updateflow(self, dig, tx_bytes, rx_bytes):
+        has_dig = dig in self._flow.keys()
+        if has_dig:
+            with self._lock:
+                self._flow[dig]["bytes_tx"] += tx_bytes
+                self._flow[dig]["bytes_rx"] += rx_bytes
+        else:
+            with self._lock:
+                self._flow.update({dig: {"bytes_tx": tx_bytes, "bytes_rx": rx_bytes}})
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
-
+        for i in list(self._flow):
+            if self._key_exists(self._flow, i, "app_name"):
+                c_app = self._flow[i]["app_name"] + "_" + self._flow[i]["iface_name"]
+                c_cat = self._flow[i]["app_cat"] + "_" + self._flow[i]["iface_name"]
+                with self._lock:
+                    b_tx = self._flow[i]["bytes_tx"]
+                    b_rx = self._flow[i]["bytes_rx"]
+                    self._app[c_app]['bytes_tx'] += b_tx
+                    self._app[c_app]['bytes_rx'] += b_rx
+                    self._cat[c_cat]["bytes_tx"] += b_tx
+                    self._cat[c_cat]["bytes_rx"] += b_rx
+                    if self._flow[i]["purge"] == 1:
+                        self._delflow(i)
+                    else:
+                        self._flow[i]["bytes_tx"] = 0
+                        self._flow[i]["bytes_rx"] = 0
         try:
             hostname = socket.gethostname()
         except Exception as e:
@@ -90,36 +113,17 @@ class CollectdFlowMan:
                 app_name = x[0].replace("-", "_")
                 i_name = x[1].replace("-", "_")
                 app_id_rxtx = hostname + "/application-" + app_name + "/if_octets-" + i_name
-                app_id_tot = hostname + "/application-" + app_name + "/total_bytes-" + i_name
                 app_txbytes = self._app[i]['bytes_tx']
                 app_rxbytes = self._app[i]['bytes_rx']
-                app_tbytes = self._app[i]['tot_bytes']
                 app_cd_if = ["N", app_txbytes, app_rxbytes]
-                app_cd_tot = ["N", app_tbytes]
-
-                # TODO evaluate ways to compress data
-
-                # if app_txbytes != self._app[i]['old_tx'] or app_rxbytes != self._app[i]['old_rx']:
-                #    self._app[i]['old_tx'] = app_txbytes
-                #    self._app[i]['old_rx'] = app_rxbytes
-
                 self._csocket.putval(app_id_rxtx, app_cd_if, interval)
-
-                # if app_tbytes != self._app[i]['old_tot']:
-                #    self._app[i]['old_tot'] = app_tbytes
-
-                self._csocket.putval(app_id_tot, app_cd_tot, interval)
 
             for i in list(self._cat):
                 x = i.split("_")
                 cat_name = x[0].replace("-", "_")
                 i_name = x[1].replace("-", "_")
                 cat_id_rxtx = hostname + "/category-" + cat_name + "/if_octets-" + i_name
-                cat_id_tot = hostname + "/category-" + cat_name + "/total_bytes-" + i_name
                 cat_txbytes = self._cat[i]['bytes_tx']
                 cat_rxbytes = self._cat[i]['bytes_rx']
-                cat_tbytes = self._cat[i]['tot_bytes']
                 cat_cd_if = ["N", cat_txbytes, cat_rxbytes]
-                cat_cd_tot = ["N", cat_tbytes]
                 self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
-                self._csocket.putval(cat_id_tot, cat_cd_tot, interval)
