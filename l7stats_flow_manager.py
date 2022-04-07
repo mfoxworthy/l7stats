@@ -35,16 +35,17 @@ class CollectdFlowMan:
 
     def __init__(self):
         self._flow = {}
+        self._map = {}
         self._app = {}
         self._cat = {}
         self._csocket = Collectd()
         self._lock = RLock()
 
-    def _key_exists(self, dict, *keys):
-        _dict = dict
+    def _key_exists(self, element, *keys):
+        _element = element
         for key in keys:
             try:
-                _dict = _dict[key]
+                _element = _element[key]
             except KeyError:
                 return False
         return True
@@ -59,14 +60,14 @@ class CollectdFlowMan:
             with self._lock:
                 self._cat.update({cat_int_name: {"bytes_tx": 0, "bytes_rx": 0}})
         with self._lock:
-            self._flow.update(
-                {dig: {"app_name": app, "app_cat": cat, "iface_name": iface}})
+            self._map.update({dig: {"app_name": app, "app_cat": cat, "iface_name": iface}})
 
     def _delflow(self, dig):
         if dig not in self._flow.keys():
             syslog(LOG_WARNING, "Digest not found...\n", dig)
         else:
             _ = self._flow.pop(dig, None)
+            _ = self._map.pop(dig, None)
 
     def purgeflow(self, dig):
         has_dig = dig in self._flow.keys()
@@ -77,31 +78,29 @@ class CollectdFlowMan:
     def updateflow(self, dig, tx_bytes, rx_bytes):
         has_dig = dig in self._flow.keys()
         if has_dig:
-            with self._lock:
-                self._flow[dig]["bytes_tx"] += tx_bytes
-                self._flow[dig]["bytes_rx"] += rx_bytes
+            self._flow[dig]["bytes_tx"] += tx_bytes
+            self._flow[dig]["bytes_rx"] += rx_bytes
         else:
-            with self._lock:
-                self._flow.update({dig: {"bytes_tx": tx_bytes, "bytes_rx": rx_bytes}})
+            self._flow.update({dig: {"bytes_tx": tx_bytes, "bytes_rx": rx_bytes, "purge": 0}})
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
         for i in list(self._flow):
-            if self._key_exists(self._flow, i, "app_name"):
-                c_app = self._flow[i]["app_name"] + "_" + self._flow[i]["iface_name"]
-                c_cat = self._flow[i]["app_cat"] + "_" + self._flow[i]["iface_name"]
+            if i in self._map.keys():
+                c_app = self._map[i]["app_name"] + "_" + self._map[i]["iface_name"]
+                c_cat = self._map[i]["app_cat"] + "_" + self._map[i]["iface_name"]
                 with self._lock:
-                    b_tx = self._flow[i]["bytes_tx"]
-                    b_rx = self._flow[i]["bytes_rx"]
+                    b_tx = self._flow[i]['bytes_tx']
+                    b_rx = self._flow[i]['bytes_rx']
                     self._app[c_app]['bytes_tx'] += b_tx
                     self._app[c_app]['bytes_rx'] += b_rx
-                    self._cat[c_cat]["bytes_tx"] += b_tx
-                    self._cat[c_cat]["bytes_rx"] += b_rx
-                    if self._flow[i]["purge"] == 1:
+                    self._cat[c_cat]['bytes_tx'] += b_tx
+                    self._cat[c_cat]['bytes_rx'] += b_rx
+                    if self._flow[i]['purge'] == 1:
                         self._delflow(i)
                     else:
-                        self._flow[i]["bytes_tx"] = 0
-                        self._flow[i]["bytes_rx"] = 0
+                        self._flow[i]['bytes_tx'] = 0
+                        self._flow[i]['bytes_rx'] = 0
         try:
             hostname = socket.gethostname()
         except Exception as e:
@@ -115,8 +114,9 @@ class CollectdFlowMan:
                 app_id_rxtx = hostname + "/application-" + app_name + "/if_octets-" + i_name
                 app_txbytes = self._app[i]['bytes_tx']
                 app_rxbytes = self._app[i]['bytes_rx']
-                app_cd_if = ["N", app_txbytes, app_rxbytes]
-                self._csocket.putval(app_id_rxtx, app_cd_if, interval)
+                if app_rxbytes != 0 or app_txbytes != 0:
+                    app_cd_if = ["N", app_rxbytes, app_txbytes]
+                    self._csocket.putval(app_id_rxtx, app_cd_if, interval)
 
             for i in list(self._cat):
                 x = i.split("_")
@@ -125,5 +125,10 @@ class CollectdFlowMan:
                 cat_id_rxtx = hostname + "/category-" + cat_name + "/if_octets-" + i_name
                 cat_txbytes = self._cat[i]['bytes_tx']
                 cat_rxbytes = self._cat[i]['bytes_rx']
-                cat_cd_if = ["N", cat_txbytes, cat_rxbytes]
-                self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
+                if cat_rxbytes != 0 or cat_txbytes != 0:
+                    cat_cd_if = ["N", cat_rxbytes, cat_txbytes]
+                    self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
+
+    def printdict(self):
+        print(self._flow)
+        print("\n")
