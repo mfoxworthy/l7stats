@@ -1,8 +1,6 @@
 import json
 import select
 import socket
-import sys
-import os
 from syslog import \
     openlog, syslog, LOG_PID, LOG_PERROR, LOG_DAEMON, \
     LOG_DEBUG, LOG_ERR, LOG_WARNING
@@ -11,7 +9,7 @@ from syslog import \
 class BrokerUds:
     sd = None
     fh = None
-    uri = None
+    path = None
 
     def connect(self, path):
         self.path = path
@@ -33,6 +31,7 @@ class BrokerUds:
         return self.fh
 
     def read(self):
+
         jd = {"type": "noop"}
 
         fd_read = [self.sd]
@@ -54,3 +53,7 @@ class BrokerUds:
         jd = json.loads(data)
 
         return jd
+
+    def close(self):
+        if self.sd is not None:
+            self.sd.close()
