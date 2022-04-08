@@ -104,7 +104,7 @@ def gen_socket(e):
     return retsock
 
 
-def netify_thread(lk):
+def netify_thread():
     nd = netifyd()
     fh = nd.connect(SOCKET_ENDPOINT)
     global fl
@@ -187,8 +187,7 @@ def netify_thread(lk):
                 digest = str(digest.hexdigest())
 
                 if digest:
-                    with lk:
-                        fl.addflow(digest, app_name, app_cat_name, iface_name)
+                    fl.addflow(digest, app_name, app_cat_name, iface_name)
 
             if jd['type'] == 'agent_status':
                 """ we explicitly ignore agent_status ; not implemented """
@@ -203,7 +202,7 @@ def netify_thread(lk):
             continue
 
 
-def broker_thread(lk):
+def broker_thread():
     bd = BrokerUds()
     fhb = bd.connect(BROKER_SOCKET_ENDPOINT)
     global fl
@@ -221,31 +220,28 @@ def broker_thread(lk):
             continue
 
         if jd['type'] == 'purge':
-            with lk:
-                try:
-                    fl.purgeflow(jd['flow']['digest'])
-                except Exception as e:
-                    print(e)
-                    syslog(LOG_ERR, f"Failed to purge flow: {jd['flow']['digest']}")
-                    continue
+            try:
+                fl.purgeflow(jd['flow']['digest'])
+            except Exception as e:
+                print(e)
+                syslog(LOG_ERR, f"Failed to purge flow: {jd['flow']['digest']}")
+                continue
 
         elif jd['type'] == 'flow_update_rx':
-            with lk:
-                try:
-                    fl.updateflow(jd['flow']['digest'], 0, jd['flow']['r_bytes'])
-                except Exception as e:
-                    print(e)
-                    syslog(LOG_ERR, f"Failed to update flow with rx bytes: {jd['flow']['digest']}")
-                    continue
+            try:
+                fl.updateflow(jd['flow']['digest'], 0, jd['flow']['r_bytes'])
+            except Exception as e:
+                print(e)
+                syslog(LOG_ERR, f"Failed to update flow with rx bytes: {jd['flow']['digest']}")
+                continue
 
         elif jd['type'] == 'flow_update_tx':
-            with lk:
-                try:
-                    fl.updateflow(jd['flow']['digest'], jd['flow']['t_bytes'], 0)
-                except Exception as e:
-                    print(e)
-                    syslog(LOG_ERR, f"Failed to update flow with tx bytes: {jd['flow']['digest']}")
-                    continue
+            try:
+                fl.updateflow(jd['flow']['digest'], jd['flow']['t_bytes'], 0)
+            except Exception as e:
+                print(e)
+                syslog(LOG_ERR, f"Failed to update flow with tx bytes: {jd['flow']['digest']}")
+                continue
         else:
             continue
 
@@ -263,8 +259,8 @@ if __name__ == "__main__":
     fl = CollectdFlowMan()
 
     lock = threading.Lock()
-    threading.Thread(target=netify_thread, args=(lock,), daemon=True).start()
-    threading.Thread(target=broker_thread, args=(lock,), daemon=True).start()
+    threading.Thread(target=netify_thread, daemon=True).start()
+    threading.Thread(target=broker_thread, daemon=True).start()
 
     eh = threading.Event()
     threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL, fl)).start()

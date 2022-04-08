@@ -60,6 +60,7 @@ class CollectdFlowMan:
             with self._lock:
                 self._cat.update({cat_int_name: {"bytes_tx": 0, "bytes_rx": 0}})
         with self._lock:
+            print("Updating flow data", dig)
             self._map.update({dig: {"app_name": app, "app_cat": cat, "iface_name": iface}})
 
     def _delflow(self, dig):
@@ -78,8 +79,9 @@ class CollectdFlowMan:
     def updateflow(self, dig, tx_bytes, rx_bytes):
         has_dig = dig in self._flow.keys()
         if has_dig:
-            self._flow[dig]["bytes_tx"] += tx_bytes
-            self._flow[dig]["bytes_rx"] += rx_bytes
+            with self._lock:
+                self._flow[dig]["bytes_tx"] += tx_bytes
+                self._flow[dig]["bytes_rx"] += rx_bytes
         else:
             self._flow.update({dig: {"bytes_tx": tx_bytes, "bytes_rx": rx_bytes, "purge": 0}})
 
@@ -99,6 +101,10 @@ class CollectdFlowMan:
                     if self._flow[i]['purge'] == 1:
                         self._delflow(i)
                     else:
+                        if b_tx != self._flow[i]['bytes_tx']:
+                            print("Data came in on TX")
+                        elif b_rx != self._flow[i]['bytes_rx']:
+                            print("Data came in on RX")
                         self._flow[i]['bytes_tx'] = 0
                         self._flow[i]['bytes_rx'] = 0
         try:
@@ -114,9 +120,8 @@ class CollectdFlowMan:
                 app_id_rxtx = hostname + "/application-" + app_name + "/if_octets-" + i_name
                 app_txbytes = self._app[i]['bytes_tx']
                 app_rxbytes = self._app[i]['bytes_rx']
-                if app_rxbytes != 0 or app_txbytes != 0:
-                    app_cd_if = ["N", app_rxbytes, app_txbytes]
-                    self._csocket.putval(app_id_rxtx, app_cd_if, interval)
+                app_cd_if = ["N", app_rxbytes, app_txbytes]
+                self._csocket.putval(app_id_rxtx, app_cd_if, interval)
 
             for i in list(self._cat):
                 x = i.split("_")
@@ -125,9 +130,8 @@ class CollectdFlowMan:
                 cat_id_rxtx = hostname + "/category-" + cat_name + "/if_octets-" + i_name
                 cat_txbytes = self._cat[i]['bytes_tx']
                 cat_rxbytes = self._cat[i]['bytes_rx']
-                if cat_rxbytes != 0 or cat_txbytes != 0:
-                    cat_cd_if = ["N", cat_rxbytes, cat_txbytes]
-                    self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
+                cat_cd_if = ["N", cat_rxbytes, cat_txbytes]
+                self._csocket.putval(cat_id_rxtx, cat_cd_if, interval)
 
     def printdict(self):
         print(self._flow)
