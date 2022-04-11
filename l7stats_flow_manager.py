@@ -41,15 +41,6 @@ class CollectdFlowMan:
         self._csocket = Collectd()
         self._lock = RLock()
 
-    def _key_exists(self, element, *keys):
-        _element = element
-        for key in keys:
-            try:
-                _element = _element[key]
-            except KeyError:
-                return False
-        return True
-
     def addflow(self, dig, app, cat, iface):
         app_int_name = app + "_" + iface
         cat_int_name = cat + "_" + iface
