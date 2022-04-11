@@ -66,46 +66,21 @@ def update_data(e, t, fl):
 
 def cleanup():
     global nd
+    global bd
     global eh
     nd.close()
+    bd.close()
     eh.set()
 
 
 def sig_handler(s, f):
     syslog(LOG_ERR, f"Received stack {repr(s)} on frame {repr(f)}")
-    # cleanup()
-    os._exit(0)
-
-
-def gen_socket(e):
-    fp = e.split("unix://")[-1]
-    err = True
-
-    try:
-        retsock = nd.connect(uri=e)
-    except:
-        try:
-            syslog(LOG_INFO, f"unlinking {fp}")
-            os.unlink(fp)
-        except OSError:
-            if not os.path.exists(fp):
-                syslog(LOG_INFO, f"{fp} doesn't exist")
-            else:
-                syslog(LOG_ERR, f"{fp} exists after attempting to unlink")
-    else:
-        err = False
-
-    if err:
-        try:
-            retsock = nd.connect(uri=e)
-        except:
-            retsock = None
-
-    return retsock
+    cleanup()
+    exit(0)
 
 
 def netify_thread():
-    nd = netifyd()
+    global nd
     fh = nd.connect(SOCKET_ENDPOINT)
     global fl
 
@@ -203,7 +178,7 @@ def netify_thread():
 
 
 def broker_thread():
-    bd = BrokerUds()
+    global bd
     fhb = bd.connect(BROKER_SOCKET_ENDPOINT)
     global fl
 
@@ -223,7 +198,6 @@ def broker_thread():
             try:
                 fl.purgeflow(jd['flow']['digest'])
             except Exception as e:
-                print(e)
                 syslog(LOG_ERR, f"Failed to purge flow: {jd['flow']['digest']}")
                 continue
 
@@ -231,7 +205,6 @@ def broker_thread():
             try:
                 fl.updateflow(jd['flow']['digest'], 0, jd['flow']['r_bytes'])
             except Exception as e:
-                print(e)
                 syslog(LOG_ERR, f"Failed to update flow with rx bytes: {jd['flow']['digest']}")
                 continue
 
@@ -239,7 +212,6 @@ def broker_thread():
             try:
                 fl.updateflow(jd['flow']['digest'], jd['flow']['t_bytes'], 0)
             except Exception as e:
-                print(e)
                 syslog(LOG_ERR, f"Failed to update flow with tx bytes: {jd['flow']['digest']}")
                 continue
         else:
@@ -248,6 +220,7 @@ def broker_thread():
 
 # start off a thread to report data every APP_UPDATE_ITVL secs
 if __name__ == "__main__":
+
     SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
     BROKER_SOCKET_ENDPOINT = "/var/run/l7stats.sock"
     SLEEP_PERIOD = randint(1, 5)
@@ -257,12 +230,14 @@ if __name__ == "__main__":
     APP_CAT_FILE = "/etc/netify-fwa/netify-categories.json"
     TIMING_PRECISION = 1
     fl = CollectdFlowMan()
+    nd = netifyd()
+    bd = BrokerUds()
+    eh = threading.Event()
 
     lock = threading.Lock()
     threading.Thread(target=netify_thread, daemon=True).start()
     threading.Thread(target=broker_thread, daemon=True).start()
 
-    eh = threading.Event()
     threading.Thread(target=update_data, args=(eh, APP_UPDATE_ITVL, fl)).start()
 
     signal.signal(signal.SIGHUP, sig_handler)
