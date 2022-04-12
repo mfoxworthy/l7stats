@@ -1,9 +1,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=l7stats
-PKG_SOURCE_VERSION:=fd61253e0958727f4f91f2d5cf61a17204e03738
-PKG_VERSION:=v1.0
-PKG_RELEASE:=v1.0
+PKG_SOURCE_VERSION:=542ca21c49f8768ed5cba2e738bfb6700ceb47ed
+PKG_SOURCE_DATE=2022-03-03
+PKG_RELEASE:=v1.1
 PKG_MAINTAINER:=Michael Foxworthy <mfoxworthy@ipsquared.com>
 
 PKG_SOURCE_PROTO:=git
@@ -28,11 +28,6 @@ define Package/l7stats/description
   application with data.
 endef
 
-define Build/Prepare
-endef
-
-define Build/Configure
-endef
 
 define Build/Compile
 endef
