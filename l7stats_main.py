@@ -203,14 +203,14 @@ def broker_thread():
 
         elif jd['type'] == 'flow_update_rx':
             try:
-                fl.updateflow(jd['flow']['digest'], 0, jd['flow']['r_bytes'])
+                fl.updateflow(jd['flow']['digest'], jd['flow']['iface'], 0, jd['flow']['r_bytes'])
             except Exception as e:
                 syslog(LOG_ERR, f"Failed to update flow with rx bytes: {jd['flow']['digest']}")
                 continue
 
         elif jd['type'] == 'flow_update_tx':
             try:
-                fl.updateflow(jd['flow']['digest'], jd['flow']['t_bytes'], 0)
+                fl.updateflow(jd['flow']['digest'], jd['flow']['iface'], jd['flow']['t_bytes'], 0)
             except Exception as e:
                 syslog(LOG_ERR, f"Failed to update flow with tx bytes: {jd['flow']['digest']}")
                 continue
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
     BROKER_SOCKET_ENDPOINT = "/var/run/l7stats.sock"
     SLEEP_PERIOD = randint(1, 5)
-    APP_UPDATE_ITVL = 30
+    APP_UPDATE_ITVL = 10
     app_to_cat = dict()
     APP_PROTO_FILE = "/etc/netify-fwa/app-proto-data.json"
     APP_CAT_FILE = "/etc/netify-fwa/netify-categories.json"

@@ -67,29 +67,39 @@ class CollectdFlowMan:
             with self._lock:
                 self._flow[dig]["purge"] = 1
 
-    def updateflow(self, dig, tx_bytes, rx_bytes):
+    def updateflow(self, dig, iface, tx_bytes, rx_bytes):
         has_dig = dig in self._flow.keys()
         if has_dig:
             with self._lock:
                 self._flow[dig]["bytes_tx"] += tx_bytes
                 self._flow[dig]["bytes_rx"] += rx_bytes
         else:
-            self._flow.update({dig: {"bytes_tx": tx_bytes, "bytes_rx": rx_bytes, "purge": 0}})
+            self._flow.update({dig: {"iface_name": iface, "bytes_tx": tx_bytes, "bytes_rx": rx_bytes, "purge": 0}})
 
     def sendappdata(self, interval):
         interval = {"interval": interval}
         for i in list(self._flow):
             if i in self._map.keys():
+                flow_id = str(self._flow[i])
                 c_app = self._map[i]["app_name"] + "_" + self._map[i]["iface_name"]
                 c_cat = self._map[i]["app_cat"] + "_" + self._map[i]["iface_name"]
                 with self._lock:
+
                     b_tx = self._flow[i]['bytes_tx']
                     b_rx = self._flow[i]['bytes_rx']
                     self._app[c_app]['bytes_tx'] += b_tx
                     self._app[c_app]['bytes_rx'] += b_rx
                     self._cat[c_cat]['bytes_tx'] += b_tx
                     self._cat[c_cat]['bytes_rx'] += b_rx
-                    if self._flow[i]['purge'] == 1:
+                    if self._flow[i]['purge'] == 1 and flow_id not in self._map.keys():
+                        app = "unknown" + "_" + self._flow[i]["iface_name"]
+                        self.addflow(flow_id, "unknown", "unknown", self._flow[i]["iface_name"])
+                        self._app[app]['bytes_tx'] += b_tx
+                        self._app[app]['bytes_rx'] += b_rx
+                        self._cat[app]['bytes_tx'] += b_tx
+                        self._cat[app]['bytes_rx'] += b_rx
+                        self._delflow(i)
+                    elif self._flow[i]['purge'] == 1:
                         self._delflow(i)
                     else:
                         if b_tx != self._flow[i]['bytes_tx']:
