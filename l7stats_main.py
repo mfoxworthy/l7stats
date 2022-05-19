@@ -57,10 +57,12 @@ def update_data(e, t, fl):
 
         if timing_bias < t and timing_bias > 0:
             t_delta = round_float_by_precision(t - timing_bias)
-            syslog(LOG_INFO, f"normalized sleep to {t_delta}")
+            if LOGGING == 1:
+                syslog(LOG_INFO, f"normalized sleep to {t_delta}")
             time.sleep(t_delta)
         else:
-            syslog(LOG_INFO, f"using default sleep timer, timing_bias is: {timing_bias}")
+            if LOGGING == 1:
+                syslog(LOG_INFO, f"using default sleep timer, timing_bias is: {timing_bias}")
             time.sleep(t)
 
 
@@ -74,7 +76,8 @@ def cleanup():
 
 
 def sig_handler(s, f):
-    syslog(LOG_ERR, f"Received stack {repr(s)} on frame {repr(f)}")
+    if LOGGING == 1:
+        syslog(LOG_ERR, f"Received stack {repr(s)} on frame {repr(f)}")
     cleanup()
     exit(0)
 
@@ -102,20 +105,23 @@ def netify_thread():
             if jd is None:
                 nd.close()
                 fh = None
-                syslog(LOG_INFO, f"backing off for {SLEEP_PERIOD}..")
+                if LOGGING == 1:
+                    syslog(LOG_INFO, f"backing off for {SLEEP_PERIOD}..")
                 time.sleep(SLEEP_PERIOD)
                 nd = netifyd()
                 fh = nd.connect(SOCKET_ENDPOINT)
                 continue
 
             if jd['type'] == 'noop':
-                syslog(LOG_DEBUG, "detected noop, continuing...")
+                if LOGGING == 1:
+                    syslog(LOG_DEBUG, "detected noop, continuing...")
                 continue
 
             if all(['flow_count' in jd.keys(), 'flow_count_prev' in jd.keys()]):
-                syslog(LOG_INFO,
-                       f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}" \
-                       + f"{os.linesep}delta == {-nd.flows_delta}")
+                if LOGGING == 1:
+                    syslog(LOG_INFO,
+                           f"flow count == {jd['flow_count']}{os.linesep}previous flow count == {jd['flow_count_prev']}" \
+                           + f"{os.linesep}delta == {-nd.flows_delta}")
                 continue
 
             if jd['type'] == 'flow':
@@ -140,12 +146,13 @@ def netify_thread():
                     app_cat = app_to_cat[APP_CAT_FILE]['applications'][str(app_int)]
                     app_cat_name = app_to_cat[APP_PROTO_FILE]['application_category'][str(app_cat)]['tag']
                 else:
-                    syslog(LOG_INFO, f"failure.... read in {app_name_str}, unable to parse further")
+                    if LOGGING == 1:
+                        syslog(LOG_INFO, f"failure.... read in {app_name_str}, unable to parse further")
                     app_name = "unknown"
                     app_cat = 0
                     app_cat_name = "unknown"
-
-                syslog(LOG_INFO, f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
+                if LOGGING == 1:
+                    syslog(LOG_INFO, f"app_cat = {app_cat}, app_cat_name = {app_cat_name}")
 
                 iface_name = jd['interface']
 
@@ -154,8 +161,9 @@ def netify_thread():
                 protocol_mapping_name = app_to_cat[APP_PROTO_FILE]['protocol_category'][str(detected_protocol_mapping)][
                     'tag']
 
-                syslog(LOG_INFO,
-                       f"detected_protocol_mapping={detected_protocol_mapping}, protocol_mapping_name  = {protocol_mapping_name}")
+                if LOGGING == 1:
+                    syslog(LOG_INFO,
+                           f"detected_protocol_mapping={detected_protocol_mapping}, protocol_mapping_name  = {protocol_mapping_name}")
                 digest = (str(jd['flow']['local_ip']) + str(jd['flow']['local_port']) + str(jd['flow']['other_ip'])
                           + str(jd['flow']['other_port'])).replace(".", "")
                 digest = hashlib.sha1(digest.encode())
@@ -188,7 +196,8 @@ def broker_thread():
         if jd is None:
             bd.close()
             fhb = None
-            syslog(LOG_INFO, f"backing off for {SLEEP_PERIOD}..")
+            if LOGGING == 1:
+                syslog(LOG_INFO, f"backing off for {SLEEP_PERIOD}..")
             time.sleep(SLEEP_PERIOD)
             bd = BrokerUds()
             fhb = bd.connect(BROKER_SOCKET_ENDPOINT)
@@ -220,7 +229,6 @@ def broker_thread():
 
 # start off a thread to report data every APP_UPDATE_ITVL secs
 if __name__ == "__main__":
-
     SOCKET_ENDPOINT = "unix:///var/run/netifyd/netifyd.sock"
     BROKER_SOCKET_ENDPOINT = "/var/run/l7stats.sock"
     SLEEP_PERIOD = randint(1, 5)
@@ -229,6 +237,7 @@ if __name__ == "__main__":
     APP_PROTO_FILE = "/etc/netify-fwa/app-proto-data.json"
     APP_CAT_FILE = "/etc/netify-fwa/netify-categories.json"
     TIMING_PRECISION = 1
+    LOGGING = 0
     fl = CollectdFlowMan()
     nd = netifyd()
     bd = BrokerUds()
