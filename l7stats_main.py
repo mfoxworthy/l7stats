@@ -142,7 +142,8 @@ def netify_thread():
                 if 1 == len(app_trail):
                     app_int = app_int.rstrip(".")
                     app_name = app_trail[0].lstrip(".")
-                    syslog(LOG_INFO, f"app_int == {app_int}, app_name = {app_name}")
+                    if LOGGING == 1:
+                        syslog(LOG_INFO, f"app_int == {app_int}, app_name = {app_name}")
                     app_cat = app_to_cat[APP_CAT_FILE]['applications'][str(app_int)]
                     app_cat_name = app_to_cat[APP_PROTO_FILE]['application_category'][str(app_cat)]['tag']
                 else:
